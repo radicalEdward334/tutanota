@@ -10,11 +10,11 @@ import type {CertificateInfo} from "../entities/sys/CertificateInfo"
 import type {UserSettingsGroupRoot} from "../entities/tutanota/UserSettingsGroupRoot"
 import type {CalendarEventAttendee} from "../entities/tutanota/CalendarEventAttendee"
 
-export const reverse: <K,V>({[K]: V}) => {[V]: K} = (objectMap) =>  Object.keys(objectMap)
-                                                        .reduce((r, k) => {
-                                                        	const v = objectMap[downcast(k)]
-                                                        	return Object.assign(r, {[v]: k})
-                                                        }, {})
+export const reverse: <K, V>({[K]: V}) => {[V]: K} = (objectMap) => Object.keys(objectMap)
+                                                                          .reduce((r, k) => {
+	                                                                          const v = objectMap[downcast(k)]
+	                                                                          return Object.assign(r, {[v]: k})
+                                                                          }, {})
 // Also used in other prjects
 export type $Reversed<T> = $Call<typeof reverse, T>
 
