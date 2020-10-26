@@ -1188,17 +1188,20 @@ module.exports = {
 		"installNow_action": "Install now.",
 		"checkingForUpdate_action": "Checking for Update…",
 		"resetZoomFactor_action": "Reset Zoom Factor",
-			"template_label": "Template",
-			"templateEdit_label": "Edit Template",
-			"templateMain_label": "Template",
-			"addTemplate_label": "Add Template",
-			"templateFilter_label": "Filter Templates",
-			"templateExpander_label": "Show Templates",
-			"templateTitle_label": "Template",
-			"templateID_label": "ID",
-			"templateTable_title": "Template",
-			"templateTable_id": "ID",
-			"templateSubmit_label": "Submit Template",
-			"templateTable_content": "Content",
+
+		// Temporary
+
+		"template_label": "Template",
+		"templateEdit_label": "edit Template",
+		"templateMain_label": "Template settings",
+		"addTemplate_label": "add Template",
+		"templateFilter_label": "Filter",
+		"templateExpander_label": "show Templates",
+		"templateTitle_label": "Title",
+		"templateID_label": "ID",
+		"templateTable_title": "Title",
+		"templateTable_id": "ID",
+		"templateSubmit_label": "Submit",
+		"templateTable_content": "Content"
 	}
 }

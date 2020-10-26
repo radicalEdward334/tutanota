@@ -174,9 +174,9 @@ class DeviceConfig {
 		this._store()
 	}
 
-	getTemplateArray(): ListObject[] {
-		return this._templateArray
-	}
+	// getTemplateArray(): ListObject {
+	// 	return this._templateArray
+	// }
 
 	getTemplatesEnabled(): Stream<?boolean> {
 		return this._templatesEnabled

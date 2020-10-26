@@ -528,13 +528,19 @@ function openTemplateFeature(editor: ?Editor) {
 	const cursorRect = _editor.getCursorPosition()
 	const editorRect = _editor.getDOM().getBoundingClientRect();
 	const onsubmit = (text) => {
-		const result = text.replace(/\n/g, "<br />")
-		_editor.insertHTML(result)
-		console.log(_editor.getHTML())
+		_editor.insertHTML(text)
 		_editor.focus()
 	}
 
-	const rectNew = new DomRectReadOnlyPolyfilled(editorRect.left, cursorRect.top + 15, cursorRect.width, cursorRect.height);
+	// if cursor is at the bottom from editor, display modal above it
+	let topRect = 0
+	if (editorRect.bottom - cursorRect.top < 400) {
+		topRect = cursorRect.top
+		// topRect = editorRect.bottom - 400
+	} else {
+		topRect = cursorRect.top
+	}
+	const rectNew = new DomRectReadOnlyPolyfilled(editorRect.left, topRect + 15, cursorRect.width, cursorRect.height);
 	const dropdown = new AutocompletePopup(rectNew, onsubmit).show()
 	console.log(dropdown)
 }

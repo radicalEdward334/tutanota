@@ -579,22 +579,6 @@ export class WorkerClient implements EntityRestInterface {
 	getEventByUid(uid: string): Promise<?CalendarEvent> {
 		return this._queue.postMessage(new Request("getEventByUid", [uid]))
 	}
-
-	enableTemplates(): Promise<void> {
-		return this._postRequest(new Request('enableTemplates', arguments))
-	}
-
-	disableTemplates(): Promise<void> {
-		return this._postRequest(new Request('disableTemplates', arguments))
-	}
-
-	languageGerman(): Promise<void> {
-		return this._postRequest(new Request('languageGerman', arguments))
-	}
-
-	languageEnglish(): Promise<void> {
-		return this._postRequest(new Request('languageEnglish', arguments))
-	}
 }
 
 export const worker: WorkerClient = new WorkerClient()
