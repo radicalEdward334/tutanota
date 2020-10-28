@@ -23,6 +23,8 @@ import type {ContactFormAccountReturn} from "../entities/tutanota/ContactFormAcc
 import type {PaymentDataServicePutReturn} from "../entities/sys/PaymentDataServicePutReturn"
 import type {EntityUpdate} from "../entities/sys/EntityUpdate"
 import type {WebsocketCounterData} from "../entities/sys/WebsocketCounterData"
+import {LazyLoaded} from "../common/utils/LazyLoaded"
+import type {ProgressMonitorId} from "../common/utils/Utils"
 
 assertWorkerOrNode()
 
@@ -415,10 +417,6 @@ export class WorkerImpl {
 		return this._queue.postMessage(new Request("updateWebSocketState", [state]))
 	}
 
-	updateEntityEventProgress(state: number): Promise<void> {
-		return this._queue.postMessage(new Request("updateEntityEventProgress", [state]))
-	}
-
 	updateCounter(update: WebsocketCounterData): Promise<void> {
 		return this._queue.postMessage(new Request("counterUpdate", [update]))
 	}
@@ -426,5 +424,36 @@ export class WorkerImpl {
 	infoMessage(message: InfoMessage): Promise<void> {
 		return this._queue.postMessage(new Request("infoMessage", [message]))
 	}
+
+	createProgressMonitor(totalWork: number): Promise<ProgressMonitorId> {
+		return this._queue.postMessage(new Request("createProgressMonitor", [totalWork]))
+	}
+
+	progressWorkDone(reference: ProgressMonitorId, totalWork: number): Promise<void> {
+		return this._queue.postMessage(new Request("progressWorkDone", [reference, totalWork]))
+	}
 }
 
+export class ProgressMonitorDelegate {
+	_worker: WorkerImpl
+	_ref: Promise<ProgressMonitorId>
+	_totalAmount: number
+
+	constructor(totalAmount: number, worker: WorkerImpl) {
+		this._worker = worker
+		this._totalAmount = totalAmount
+		this._ref = this._worker.createProgressMonitor(totalAmount)
+	}
+
+	workDone(amount: number) {
+		this._ref.then(refIdentifier => {
+			this._worker.progressWorkDone(refIdentifier, amount)
+		})
+	}
+
+	completed() {
+		this._ref.then(refIdentifier => {
+			this._worker.progressWorkDone(refIdentifier, this._totalAmount)
+		})
+	}
+}
