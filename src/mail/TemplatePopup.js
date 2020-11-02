@@ -9,20 +9,20 @@ import {TextFieldN} from "../gui/base/TextFieldN"
 import type {TextFieldAttrs} from "../gui/base/TextFieldN"
 import stream from "mithril/stream/stream.js"
 import {Keys} from "../api/common/TutanotaConstants"
-import type {TemplateDisplayAttrs} from "./TemplateDisplay"
-import {TemplateDisplay} from "./TemplateDisplay"
-import {returnTemplates} from "./placeholderTemplates"
+import {TemplateDisplayer} from "./TemplateDisplayer"
 import {searchForID, searchInContent} from "./TemplateSearchFilter.js"
-import {assertNotNull} from "../api/common/utils/Utils"
+import type {Template} from "../settings/TemplateViewList"
+import {loadTemplates} from "../settings/TemplateViewList"
 
-export class AutocompletePopup implements ModalComponent {
+
+export class TemplatePopup implements ModalComponent {
 	_rect: PosRect
 	_filterTextAttrs: TextFieldAttrs
 	_shortcuts: Shortcut[]
 	_scrollDom: HTMLElement
 
-	_allTemplates: Array<TemplateDisplayAttrs>
-	_searchResults: Array<TemplateDisplayAttrs>
+	_allTemplates: Array<Template>
+	_searchResults: Array<Template>
 
 	_onSubmit: (string) => void
 
@@ -36,7 +36,7 @@ export class AutocompletePopup implements ModalComponent {
 	constructor(rect: PosRect, onSubmit: (string) => void) {
 		this._height = "270px"
 		this._foundResults = true
-		this._allTemplates = this._loadTemplates()
+		this._allTemplates = loadTemplates()
 		this._searchResults = this._allTemplates
 		this._setProperties()
 		this._rect = rect
@@ -142,7 +142,7 @@ export class AutocompletePopup implements ModalComponent {
 							this._scrollDom = vnode.dom
 						},
 					}, this._foundResults ?
-					this._searchResults.map((templateAttrs, index) => {
+					this._searchResults.map((template, index) => {
 						this._selected = index === this._currentindex
 						return m("", {
 							onclick: (e) => {
@@ -156,17 +156,12 @@ export class AutocompletePopup implements ModalComponent {
 							style: {
 								borderLeft: this._selected ? "4px solid" : "4px solid transparent",
 							}
-						}, m(TemplateDisplay, templateAttrs))
+						}, m(TemplateDisplayer, {template}))
 					})
 					: m(".row-selected", {style:{marginTop: "10px", textAlign: "center"}},"Nothing found")
 				), // Template Text END
 			]
 		)
-	}
-
-	_loadTemplates(): Array<TemplateDisplayAttrs> {
-		// returnTemplates()
-		return JSON.parse(assertNotNull(localStorage.getItem("Templates")))
 	}
 
 	_setProperties() { /* calculate height with certain amount of templates and reset selection to first template */

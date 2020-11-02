@@ -4,7 +4,7 @@ import {themeId} from "../gui/theme"
 import {client} from "./ClientDetector"
 import type {CalendarViewTypeEnum} from "../calendar/CalendarView"
 import {uint8ArrayToBase64} from "../api/common/utils/Encoding"
-import type {ListObject} from "../settings/TemplateSettingsViewer"
+import type {Template} from "../settings/TemplateViewList"
 
 assertMainOrNodeBoot()
 
@@ -23,7 +23,7 @@ class DeviceConfig {
 	_defaultCalendarView: {[uderId: Id]: ?CalendarViewTypeEnum};
 	_signupToken: string;
 	_templatesEnabled: Stream<?boolean>
-	_templateArray: ListObject[];
+	_templateArray: Template[];
 
 	/**
 	 * @param config The config to copy from
@@ -169,7 +169,7 @@ class DeviceConfig {
 		}
 	}
 
-	setTemplateArray(templateArray: ListObject[]) {
+	setTemplateArray(templateArray: Template[]) {
 		this._templateArray = templateArray
 		this._store()
 	}

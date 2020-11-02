@@ -123,8 +123,7 @@ import {newMailEditorAsResponse, newMailEditorFromDraft, newMailtoUrlMailEditor}
 import type {MailboxDetail} from "./MailModel"
 import type {ResponseMailParameters} from "./SendMailModel"
 import {defaultSendMailModel} from "./SendMailModel"
-import {modal} from "../gui/base/Modal"
-import {AutocompletePopup} from "./AutocompletePopup"
+import {TemplatePopup} from "./TemplatePopup"
 
 assertMainOrNode()
 

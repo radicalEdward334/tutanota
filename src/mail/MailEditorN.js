@@ -58,7 +58,7 @@ import {FileOpenError} from "../api/common/error/FileOpenError"
 import {assertNotNull, downcast, neverNull} from "../api/common/utils/Utils"
 import {showUpgradeWizard} from "../subscription/UpgradeSubscriptionWizard"
 import {DomRectReadOnlyPolyfilled} from "../gui/base/Dropdown"
-import {AutocompletePopup} from "./AutocompletePopup"
+import {TemplatePopup} from "./TemplatePopup"
 
 export type MailEditorAttrs = {
 	model: SendMailModel,
@@ -541,7 +541,7 @@ function openTemplateFeature(editor: ?Editor) {
 		topRect = cursorRect.top
 	}
 	const rectNew = new DomRectReadOnlyPolyfilled(editorRect.left, topRect + 15, cursorRect.width, cursorRect.height);
-	const dropdown = new AutocompletePopup(rectNew, onsubmit).show()
+	const dropdown = new TemplatePopup(rectNew, onsubmit).show()
 	console.log(dropdown)
 }
 
