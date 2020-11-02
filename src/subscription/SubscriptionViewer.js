@@ -59,6 +59,11 @@ import {ButtonN, ButtonType} from "../gui/base/ButtonN"
 import {TextFieldN} from "../gui/base/TextFieldN"
 import {DropDownSelectorN} from "../gui/base/DropDownSelectorN"
 import {Dialog} from "../gui/base/Dialog"
+import {ColumnWidth, TableN} from "../gui/base/TableN"
+import type {TableAttrs, TableLineAttrs} from "../gui/base/TableN"
+import type {ButtonAttrs} from "../gui/base/ButtonN"
+import {showPurchaseGiftCardWizard} from "./PurchaseGiftCardForm"
+import {BootIcons} from "../gui/base/icons/BootIcons"
 
 assertMainOrNode()
 
@@ -88,6 +93,7 @@ export class SubscriptionViewer implements UpdatableSettingsViewer {
 	_orderAgreement: ?OrderProcessingAgreement;
 	_currentSubscription: SubscriptionTypeEnum;
 	_isCancelled: boolean;
+	_giftCardTableLines: Array<TableLineAttrs>;
 
 	constructor() {
 		let subscriptionAction = new Button("subscription_label", () => {
@@ -211,6 +217,21 @@ export class SubscriptionViewer implements UpdatableSettingsViewer {
 			view: () => m(".flex-center.mb-l", m("", {style: {"width": '200px'}}, m(ButtonN, deleteButtonAttrs)))
 		}), false)
 
+		const purchaseGiftCardButtonAttrs: ButtonAttrs = {
+			label: () => "Purchase a gift card",
+			click: () => showPurchaseGiftCardWizard(),
+			icon: () => Icons.Add
+		}
+
+		this._giftCardTableLines = []
+		let giftCardTableAttrs: TableAttrs = {
+			columnHeading: [() => "Active", () => "Linked account", () => "Period"],
+			columnWidths: [ColumnWidth.Small, ColumnWidth.Largest, ColumnWidth.Small],
+			showActionButtonColumn: true,
+			addButtonAttrs: purchaseGiftCardButtonAttrs,
+			lines: this._giftCardTableLines,
+		}
+
 		this.view = (): VirtualElement => {
 			return m("#subscription-settings.fill-absolute.scroll.plr-l", [
 				m(".h4.mt-l", lang.get('currentlyBooked_label')),
@@ -289,6 +310,8 @@ export class SubscriptionViewer implements UpdatableSettingsViewer {
 						disabled: true,
 					})
 					: null,
+				m(".h4.mt-l", 'Gift cards'),
+				m(TableN, giftCardTableAttrs),
 				m(".h4.mt-l", lang.get('adminPremiumFeatures_action')),
 				m(TextFieldN, {
 					label: "bookingItemUsers_label",
