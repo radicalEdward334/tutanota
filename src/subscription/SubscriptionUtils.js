@@ -98,7 +98,7 @@ export function getUpgradePrice(attrs: SubscriptionData, subscription: Subscript
 	return Number(monthlyPriceString) * monthsFactor - discount
 }
 
-export function getFormattetUpgradePrice(attrs: SubscriptionData, subscription: SubscriptionTypeEnum, type: UpgradePriceTypeEnum): string {
+export function getFormattedUpgradePrice(attrs: SubscriptionData, subscription: SubscriptionTypeEnum, type: UpgradePriceTypeEnum): string {
 	return formatPrice(getUpgradePrice(attrs, subscription, type), true)
 }
 
