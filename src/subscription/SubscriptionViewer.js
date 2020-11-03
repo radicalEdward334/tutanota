@@ -62,8 +62,8 @@ import {Dialog} from "../gui/base/Dialog"
 import {ColumnWidth, TableN} from "../gui/base/TableN"
 import type {TableAttrs, TableLineAttrs} from "../gui/base/TableN"
 import type {ButtonAttrs} from "../gui/base/ButtonN"
-import {showPurchaseGiftCardWizard} from "./PurchaseGiftCardForm"
 import {BootIcons} from "../gui/base/icons/BootIcons"
+import {showPurchaseGiftCardWizard} from "./GiftCardWizard"
 
 assertMainOrNode()
 

@@ -571,8 +571,8 @@ export class WorkerClient implements EntityRestInterface {
 		return this._queue.postMessage(new Request("acceptGroupInvitation", [invitation]))
 	}
 
-	rejectGroupInvitation(receivedGroupInvitaitonId: IdTuple): Promise<void> {
-		return this._queue.postMessage(new Request("rejectGroupInvitation", [receivedGroupInvitaitonId]))
+	rejectGroupInvitation(receivedGroupInvitationId: IdTuple): Promise<void> {
+		return this._queue.postMessage(new Request("rejectGroupInvitation", [receivedGroupInvitationId]))
 	}
 
 	checkMailForPhishing(mail: Mail, links: Array<string>): Promise<boolean> {
@@ -581,6 +581,10 @@ export class WorkerClient implements EntityRestInterface {
 
 	getEventByUid(uid: string): Promise<?CalendarEvent> {
 		return this._queue.postMessage(new Request("getEventByUid", [uid]))
+	}
+
+	generateGiftCard(): Promise<void> {
+		return this._queue.postMessage(new Request("generateGiftCard", []))
 	}
 }
 

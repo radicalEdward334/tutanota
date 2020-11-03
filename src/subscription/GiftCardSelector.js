@@ -2,15 +2,36 @@
 
 import m from "mithril"
 import {BuyOptionBox, getActiveSubscriptionActionButtonReplacement} from "./BuyOptionBox"
-import {CreateGiftCardData} from "./PurchaseGiftCardForm"
 import type {BuyOptionBoxAttr} from "./BuyOptionBox"
-import {getFormattedUpgradePrice, SubscriptionType, UpgradePriceType} from "./SubscriptionUtils"
 import {lang} from "../misc/LanguageViewModel"
+import {ButtonN, ButtonType} from "../gui/base/ButtonN"
+import {formatPrice, getFormattedUpgradePrice, SubscriptionType, UpgradePriceType} from "./SubscriptionUtils"
+import type {SubscriptionOptions} from "./SubscriptionUtils"
+import {emitWizardEvent, WizardEventType} from "../gui/base/WizardDialogN"
+import type {PlanPrices} from "../api/entities/sys/PlanPrices"
+import type {CreateGiftCardData} from "./GiftCardWizard"
 
-export class GiftCardSelector implements MComponent<CreateGiftCardData> {
+export const GiftCardDuration =
+	Object.freeze
+	      ({
+		      OneYear: "0",
+		      ThreeYears: "1",
+		      FiveYears: "2"
+	      })
+
+export type GiftCardDurationEnum = $Values<typeof GiftCardDuration>
+
+export type GiftCardSelectorAttrs = {
+	data: CreateGiftCardData,
+	boxWidth: number,
+	boxHeight: number,
+	wizardDom: lazy<HTMLElement>;
+}
+
+export class GiftCardSelector implements MComponent<GiftCardSelectorAttrs> {
 	_containerDOM: HTMLElement
 
-	view(vnode: Vnode<CreateGiftCardData>): Children {
+	view(vnode: Vnode<GiftCardSelectorAttrs>): Children {
 		return [
 			m(".flex.center-horizontally.wrap", {
 					oncreate: (vnode) => {
@@ -19,38 +40,64 @@ export class GiftCardSelector implements MComponent<CreateGiftCardData> {
 					},
 				},
 				[
-					m(BuyOptionBox, createPremiumGiftCardBoxAttr(vnode.attrs)),
-					m(BuyOptionBox, createTeamsGiftCardBoxAttr(vnode.attrs))
+					m(BuyOptionBox, createPremiumGiftCardBoxAttr(vnode.attrs, GiftCardDuration.OneYear)),
+					m(BuyOptionBox, createPremiumGiftCardBoxAttr(vnode.attrs, GiftCardDuration.ThreeYears)),
+					m(BuyOptionBox, createPremiumGiftCardBoxAttr(vnode.attrs, GiftCardDuration.FiveYears))
 				])
 		]
 	}
 }
 
-function createPremiumGiftCardBoxAttr(attrs: CreateGiftCardData): BuyOptionBoxAttr {
+function createPremiumGiftCardBoxAttr(attrs: GiftCardSelectorAttrs, duration: GiftCardDurationEnum): BuyOptionBoxAttr {
+
+	const price = formatPrice(getGiftCardPrice(attrs.data.premiumPrices, duration), true)
 	return {
-		heading: 'Premium',
-		actionButton: attrs.premiumActionButton,
-		price: getFormattedUpgradePrice(selectorAttrs, SubscriptionType.Premium, UpgradePriceType.PlanActualPrice),
-		originalPrice: getFormattedUpgradePrice(selectorAttrs, SubscriptionType.Premium, UpgradePriceType.PlanReferencePrice),
-		helpLabel: selectorAttrs.options.businessUse() ? "pricing.basePriceExcludesTaxes_msg" : "pricing.basePriceIncludesTaxes_msg",
-		features: () => [
-			lang.get("pricing.comparisonAddUser_msg", {"{1}": getFormattedUpgradePrice(selectorAttrs, SubscriptionType.Premium, UpgradePriceType.AdditionalUserPrice)}),
-			lang.get("pricing.comparisonStorage_msg", {"{amount}": selectorAttrs.premiumPrices.includedStorage}),
-			lang.get("pricing.comparisonDomainPremium_msg"),
-			lang.get("pricing.comparisonSearchPremium_msg"),
-			lang.get("pricing.comparisonMultipleCalendars_msg"),
-			lang.get("pricing.mailAddressAliasesShort_label", {"{amount}": selectorAttrs.premiumPrices.includedAliases}),
-			lang.get("pricing.comparisonInboxRulesPremium_msg"),
-			lang.get("pricing.comparisonSupportPremium_msg"),
-		],
-		width: selectorAttrs.boxWidth,
-		height: selectorAttrs.boxHeight,
-		paymentInterval: selectorAttrs.isInitialUpgrade ? selectorAttrs.options.paymentInterval : null,
-		highlighted: !selectorAttrs.options.businessUse() && selectorAttrs.highlightPremium,
-		showReferenceDiscount: selectorAttrs.isInitialUpgrade
+		heading: getGiftCardSelectorLabel(duration),
+		actionButton: {
+			view: () => m(ButtonN, {
+				label: "pricing.select_action",
+				click: () => {
+					attrs.data.giftCardLength = duration
+					emitWizardEvent(attrs.wizardDom(), WizardEventType.SHOWNEXTPAGE)
+				},
+				type: ButtonType.Login,
+			})
+		},
+		price: price,
+		originalPrice: price,
+		helpLabel: "pricing.basePriceIncludesTaxes_msg",
+		features: () => [],
+		width: attrs.boxWidth,
+		height: attrs.boxHeight,
+		paymentInterval: null,
+		highlighted: duration === GiftCardDuration.ThreeYears, //!attrs.options.businessUse() && selectorAttrs.highlightPremium,
+		showReferenceDiscount: false, // selectorAttrs.isInitialUpgrade
 	}
 }
 
-function createTeamsGiftCardBoxAttr(attrs: CreateGiftCardData): BuyOptionBoxAttr {
+function getGiftCardPrice(planPrices: PlanPrices, duration: GiftCardDurationEnum): number {
+	const yearlyPrice = Number(planPrices.monthlyPrice) * 10
+	switch (duration) {
+		case GiftCardDuration.OneYear:
+			return yearlyPrice
+		case GiftCardDuration.ThreeYears:
+			return yearlyPrice * 3
+		case GiftCardDuration.FiveYears:
+			return yearlyPrice * 5
+		default:
+			return yearlyPrice
+	}
+}
 
+function getGiftCardSelectorLabel(duration: GiftCardDurationEnum): string {
+	switch (duration) {
+		case GiftCardDuration.OneYear:
+			return "One Year"
+		case GiftCardDuration.ThreeYears:
+			return "Three Years"
+		case GiftCardDuration.FiveYears:
+			return "Five Years"
+		default:
+			return ""
+	}
 }

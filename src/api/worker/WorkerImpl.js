@@ -339,6 +339,9 @@ export class WorkerImpl {
 			getEventByUid: (message: Request) => {
 				return locator.calendar.getEventByUid(...message.args)
 			},
+			generateGiftCard: (message: Request) => {
+				return Promise.resolve() // TODO generate a gift card
+			}
 		})
 
 		// only register oncaught error handler if we are in the *real* worker scope
