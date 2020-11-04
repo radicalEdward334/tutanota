@@ -1,25 +1,15 @@
 // @flow
 
 import m from "mithril"
-import {BuyOptionBox, getActiveSubscriptionActionButtonReplacement} from "./BuyOptionBox"
 import type {BuyOptionBoxAttr} from "./BuyOptionBox"
-import {lang} from "../misc/LanguageViewModel"
+import {BuyOptionBox} from "./BuyOptionBox"
 import {ButtonN, ButtonType} from "../gui/base/ButtonN"
-import {formatPrice, getFormattedUpgradePrice, SubscriptionType, UpgradePriceType} from "./SubscriptionUtils"
-import type {SubscriptionOptions} from "./SubscriptionUtils"
+import {formatPrice} from "./SubscriptionUtils"
 import {emitWizardEvent, WizardEventType} from "../gui/base/WizardDialogN"
-import type {PlanPrices} from "../api/entities/sys/PlanPrices"
 import type {CreateGiftCardData} from "./GiftCardWizard"
-
-export const GiftCardDuration =
-	Object.freeze
-	      ({
-		      OneYear: "0",
-		      ThreeYears: "1",
-		      FiveYears: "2"
-	      })
-
-export type GiftCardDurationEnum = $Values<typeof GiftCardDuration>
+import type {GiftCardDurationEnum} from "./GiftCardUtils"
+import {getGiftCardPrice, GiftCardDuration, giftCardSelectorLabels} from "./GiftCardUtils"
+import {neverNull} from "../api/common/utils/Utils"
 
 export type GiftCardSelectorAttrs = {
 	data: CreateGiftCardData,
@@ -52,7 +42,7 @@ function createPremiumGiftCardBoxAttr(attrs: GiftCardSelectorAttrs, duration: Gi
 
 	const price = formatPrice(getGiftCardPrice(attrs.data.premiumPrices, duration), true)
 	return {
-		heading: getGiftCardSelectorLabel(duration),
+		heading: neverNull(giftCardSelectorLabels.get(duration)),
 		actionButton: {
 			view: () => m(ButtonN, {
 				label: "pricing.select_action",
@@ -75,29 +65,3 @@ function createPremiumGiftCardBoxAttr(attrs: GiftCardSelectorAttrs, duration: Gi
 	}
 }
 
-function getGiftCardPrice(planPrices: PlanPrices, duration: GiftCardDurationEnum): number {
-	const yearlyPrice = Number(planPrices.monthlyPrice) * 10
-	switch (duration) {
-		case GiftCardDuration.OneYear:
-			return yearlyPrice
-		case GiftCardDuration.ThreeYears:
-			return yearlyPrice * 3
-		case GiftCardDuration.FiveYears:
-			return yearlyPrice * 5
-		default:
-			return yearlyPrice
-	}
-}
-
-function getGiftCardSelectorLabel(duration: GiftCardDurationEnum): string {
-	switch (duration) {
-		case GiftCardDuration.OneYear:
-			return "One Year"
-		case GiftCardDuration.ThreeYears:
-			return "Three Years"
-		case GiftCardDuration.FiveYears:
-			return "Five Years"
-		default:
-			return ""
-	}
-}

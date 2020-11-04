@@ -23,6 +23,9 @@ import {header} from "../gui/base/Header"
 import {AriaLandmarks, landmarkAttrs, liveDataAttrs} from "../api/common/utils/AriaUtils"
 import type {ILoginViewController} from "./LoginViewController"
 import {showTakeOverDialog} from "./TakeOverDeletedAddressDialog"
+import {getGiftCardIdFromHash, loadGiftCard} from "../subscription/GiftCardUtils"
+import {loadUseGiftCardWizard} from "../subscription/UseGiftCardWizard"
+import {loadSignupWizard} from "../subscription/UpgradeSubscriptionWizard"
 
 assertMainOrNode()
 
@@ -137,7 +140,14 @@ export class LoginView {
 							width: client.isDesktopDevice() ? "360px" : null,
 						}
 					}, [
-						this._displayMode === DisplayMode.Credentials ? this.renderCredentialsSelector() : this.rengerLoginForm(),
+						this._displayMode === DisplayMode.Credentials
+							? this.renderCredentialsSelector()
+							: [
+								this.renderLoginForm(),
+								!(isApp() || isDesktop()) && isTutanotaDomain()
+									? m(".flex-center.pt-l", this.appButtons.map(button => m(button)))
+									: null
+							],
 						(this._anyMoreItemVisible()) ? m(".flex-center.pt-l", [
 							m(optionsExpander),
 						]) : null,
@@ -257,7 +267,7 @@ export class LoginView {
 		this._viewController.then((viewController: ILoginViewController) => viewController.formLogin())
 	}
 
-	rengerLoginForm(): Children {
+	renderLoginForm(): Children {
 		return m("form", {
 			onsubmit: (e) => {
 				// do not post the form, the form is just here to enable browser auto-fill
@@ -297,7 +307,6 @@ export class LoginView {
 							}
 						}, lang.get("help_label")) : null)
 				])),
-			!(isApp() || isDesktop()) && isTutanotaDomain() ? m(".flex-center.pt-l", this.appButtons.map(button => m(button))) : null
 		])
 	}
 
@@ -335,15 +344,28 @@ export class LoginView {
 	_signup() {
 		if (!this._showingSignup) {
 			this._showingSignup = true
-			showProgressDialog('loading_msg', this._viewController.then(c => c.loadSignupWizard())).then(dialog => dialog.show())
+			showProgressDialog('loading_msg', this._viewController.then(c => c.loadLoginScreenDialog(loadSignupWizard))).then(dialog => dialog.show())
 		}
 	}
 
 	updateUrl(args: Object, requestedPath: string) {
+		const giftCardId = getGiftCardIdFromHash(location.hash)
+
 		if (requestedPath.startsWith("/signup")) {
 			this._signup()
 			return
 		} else if (requestedPath.startsWith("/recover") || requestedPath.startsWith("/takeover")) {
+			return
+		} else if (requestedPath.startsWith("/giftcard") && giftCardId) {
+			// TODO
+			loadGiftCard(giftCardId).then((giftCard) => {
+				if (giftCard) {
+					showProgressDialog('loading_msg',
+						this._viewController.then(c => c.loadLoginScreenDialog(() => loadUseGiftCardWizard(giftCard))))
+						.then(dialog => dialog.show())
+
+				}
+			})
 			return
 		}
 		this._showingSignup = false
@@ -479,14 +501,14 @@ export function getPrivacyStatementLink(): ?string {
 
 export function renderPrivacyAndImprintLinks(): Children {
 	return m("div.center.flex.flex-grow.items-end.justify-center.mb-l.mt-xl.wrap", [
-		(getPrivacyStatementLink()) ? m("a.plr", {
-			href: getPrivacyStatementLink(),
-			target: "_blank"
-		}, lang.get("privacyLink_label")) : null,
-		(getImprintLink()) ? m("a.plr", {
-			href: getImprintLink(),
-			target: "_blank"
-		}, lang.get("imprint_label")) : null,
+			(getPrivacyStatementLink()) ? m("a.plr", {
+				href: getPrivacyStatementLink(),
+				target: "_blank"
+			}, lang.get("privacyLink_label")) : null,
+			(getImprintLink()) ? m("a.plr", {
+				href: getImprintLink(),
+				target: "_blank"
+			}, lang.get("imprint_label")) : null,
 
 			m(".mt.center.small.full-width", `v${env.versionNumber}`),
 		]

@@ -54,7 +54,8 @@ export interface ILoginViewController {
 
 	migrateDeviceConfig(oldCredentials: Object[]): Promise<void>;
 
-	loadSignupWizard(): Promise<{+show: Function}>;
+	loadLoginScreenDialog(wizardFunction: () => Promise<Dialog>): Promise<{+show: Function}>;
+
 }
 
 export class LoginViewController implements ILoginViewController {
@@ -178,7 +179,7 @@ export class LoginViewController implements ILoginViewController {
 		            })
 		            .catch(AccessExpiredError, e => {
 			            this.view.helpText = lang.get('inactiveAccount_msg')
-		            	this.view.accessExpired = true
+			            this.view.accessExpired = true
 			            m.redraw()
 			            return errorAction()
 		            })
@@ -334,7 +335,7 @@ export class LoginViewController implements ILoginViewController {
 		})
 	}
 
-	loadSignupWizard(): Promise<{+show: () => any}> {
-		return worker.initialized.then(() => loadSignupWizard())
+	loadLoginScreenDialog(wizardFunction: () => Promise<Dialog>): Promise<{+show: () => any}> {
+		return worker.initialized.then(wizardFunction)
 	}
 }

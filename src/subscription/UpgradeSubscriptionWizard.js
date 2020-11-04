@@ -31,6 +31,8 @@ import {Dialog} from "../gui/base/Dialog"
 import {InvoiceAndPaymentDataPage, InvoiceAndPaymentDataPageAttrs} from "./InvoiceAndPaymentDataPage"
 import {UpgradeConfirmPage, UpgradeConfirmPageAttrs} from "./UpgradeConfirmPage"
 import {SignupPage, SignupPageAttrs} from "./SignupPage"
+import type {GiftCard, GiftCardDurationEnum} from "./GiftCardUtils"
+import {giftCardDurationsInYears, ValueToGiftCardDuration} from "./GiftCardUtils"
 
 assertMainOrNode()
 
@@ -220,3 +222,4 @@ export function loadSignupWizard(): Promise<Dialog> {
 		return wizard
 	})
 }
+

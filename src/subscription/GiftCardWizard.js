@@ -8,12 +8,10 @@ import {createWizardDialog, emitWizardEvent, WizardEventType} from "../gui/base/
 import {SubscriptionSelector} from "./SubscriptionSelector"
 import {getUpgradePrice, SubscriptionType, UpgradePriceType, UpgradeType} from "./SubscriptionUtils"
 import {ButtonN, ButtonType} from "../gui/base/ButtonN"
-import {GiftCardDuration, GiftCardSelector} from "./GiftCardSelector"
 import type {PlanPrices} from "../api/entities/sys/PlanPrices"
 import type {SubscriptionOptions, SubscriptionTypeEnum} from "./SubscriptionUtils"
 import {createPlanPrices} from "../api/entities/sys/PlanPrices"
 import {loadUpgradePrices} from "./UpgradeSubscriptionWizard"
-import type {GiftCardDurationEnum} from "./GiftCardSelector"
 import {GiftCardConfirmationPage, GiftCardPresentationPage, SelectGiftCardTypePage} from "./GiftCardWizardPages"
 import {load} from "../api/main/Entity"
 import {CustomerTypeRef} from "../api/entities/sys/Customer"
@@ -23,6 +21,8 @@ import {CustomerInfoTypeRef} from "../api/entities/sys/CustomerInfo"
 import {AccountingInfoTypeRef} from "../api/entities/sys/AccountingInfo"
 import type {AccountingInfo} from "../api/entities/sys/AccountingInfo"
 import type {UpgradePriceServiceReturn} from "../api/entities/sys/UpgradePriceServiceReturn"
+import type {GiftCardDurationEnum} from "./GiftCardUtils"
+import {GiftCardDuration} from "./GiftCardUtils"
 
 export type CreateGiftCardData = {|
 	options: SubscriptionOptions,
