@@ -533,16 +533,12 @@ export class MailIndexer {
 			if (event.operation === OperationType.CREATE) {
 				if (containsEventOfType(events, OperationType.DELETE, event.instanceId)) {
 					// move mail
-					const finalDestinationEvent = futureActions.moved.get(event.instanceId)
+					const finalDestinationEvent = futureActions.lastMove.get(event.instanceId)
 
-					const futureMoveEvent = futureActions.moved.get(event.instanceId)
-					if (futureMoveEvent && isSameId(futureMoveEvent._id, event._id)) {
-						// Remove from futureActions if we process this event
-						futureActions.moved.delete(futureMoveEvent.instanceId)
-					}
+					futureActions.processedMove(event)
 
 					// do not execute move operation if there is a delete event or another move event.
-					if (futureActions.deleted.has(event.instanceId)
+					if (futureActions.lastDelete.has(event.instanceId)
 						|| (finalDestinationEvent && !isSameId(finalDestinationEvent.instanceListId, event.instanceListId))) {
 						return Promise.resolve()
 					} else {
@@ -551,7 +547,7 @@ export class MailIndexer {
 				} else {
 					// do not create the index entry if the element has been deleted or moved
 					// if moved the element will be indexed in the move event.
-					if (futureActions.deleted.has(event.instanceId) || futureActions.moved.has(event.instanceId)) {
+					if (futureActions.lastDelete.has(event.instanceId) || futureActions.lastMove.has(event.instanceId)) {
 						return Promise.resolve()
 					} else {
 						return this.processNewMail(event).then((result) => {
@@ -563,7 +559,7 @@ export class MailIndexer {
 				}
 			} else if (event.operation === OperationType.UPDATE) {
 				// do not execute update if event has been deleted.
-				if (futureActions.deleted.has(event.instanceId)) {
+				if (futureActions.lastDelete.has(event.instanceId)) {
 					return Promise.resolve()
 				}
 
@@ -574,7 +570,7 @@ export class MailIndexer {
 							           this._core._processDeleted(event, indexUpdate),
 							           // only index updated draft if the draft has not been moved.
 							           // the moved draft will be indexed in the move event.
-							           !futureActions.moved.get(event.instanceId)
+							           !futureActions.lastMove.get(event.instanceId)
 								           ? this.processNewMail(event).then(result => {
 									           if (result) {
 										           this._core.encryptSearchIndexEntries(result.mail._id, neverNull(result.mail._ownerGroup), result.keyToIndexEntries,
@@ -587,12 +583,9 @@ export class MailIndexer {
 				           })
 				           .catch(NotFoundError, () => console.log("tried to index update event for non existing mail"))
 			} else if (event.operation === OperationType.DELETE) {
-				const futureDeleteEvent = futureActions.deleted.get(event.instanceId)
-				if (futureDeleteEvent && isSameId(futureDeleteEvent._id, event._id)) {
-					// Welcome to the Future
-					futureActions.deleted.delete(futureDeleteEvent.instanceId)
-				}
-				if (!containsEventOfType(events, OperationType.CREATE, event.instanceId)) { // move events are handled separately
+				futureActions.processedDelete(event)
+				if (!containsEventOfType(events, OperationType.CREATE, event.instanceId)) {
+					// Check that this is *not* a move event. Move events are handled separately.
 					return this._core._processDeleted(event, indexUpdate)
 				}
 			}

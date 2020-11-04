@@ -5,7 +5,7 @@ import type {WorkerImpl} from "./WorkerImpl"
 import {decryptAndMapToInstance} from "./crypto/CryptoFacade"
 import {assertWorkerOrNode, getWebsocketOrigin, isAdminClient, isTest, Mode} from "../Env"
 import {_TypeModel as MailTypeModel} from "../entities/tutanota/Mail"
-import {firstBiggerThanSecond, GENERATED_MAX_ID, GENERATED_MIN_ID, getLetId} from "../common/EntityFunctions"
+import {firstBiggerThanSecond, GENERATED_MAX_ID, GENERATED_MIN_ID, getElementId, getLetId} from "../common/EntityFunctions"
 import {
 	AccessBlockedError,
 	AccessDeactivatedError,
@@ -29,6 +29,7 @@ import {_TypeModel as PhishingMarkerWebsocketDataTypeModel} from "../entities/tu
 import type {EntityUpdate} from "../entities/sys/EntityUpdate"
 import type {EntityRestInterface} from "./rest/EntityRestClient"
 import {EntityClient} from "../common/EntityClient"
+import {FutureBatchActions} from "./search/EventQueue"
 
 assertWorkerOrNode()
 
@@ -249,7 +250,7 @@ export class EventBusClient {
 						this._websocketWrapperQueue.push(data)
 					} else {
 						this._queueWebsocketEvents = true
-						return this._processEntityEvents(data.eventBatch, data.eventBatchOwner, data.eventBatchId).then(() => {
+						return this._processEventBatch(data.eventBatch, data.eventBatchOwner, data.eventBatchId, new FutureBatchActions()).then(() => {
 							this._lastUpdateTime = Date.now()
 							if (this._websocketWrapperQueue.length > 0) {
 								return this._processQueuedEvents()
@@ -391,9 +392,15 @@ export class EventBusClient {
 			} else {
 				return Promise.each(this._eventGroups(), groupId => {
 					return this._entity.loadAll(EntityEventBatchTypeRef, groupId, this._getLastEventBatchIdOrMinIdForGroup(groupId))
-					           .each(eventBatch => {
-						           return this._processEntityEvents(eventBatch.events, groupId, getLetId(eventBatch)[1])
-					           })
+					           .then((eventBatches) => {
+							           const futureActions = new FutureBatchActions()
+							           futureActions.populate(eventBatches.map(b => b.events))
+							           return Promise.each(
+								           eventBatches,
+								           (batch) => this._processEventBatch(batch.events, groupId, getElementId(batch), futureActions)
+							           )
+						           }
+					           )
 					           .catch(NotAuthorizedError, () => {
 						           console.log("could not download entity updates => lost permission")
 					           }).finally(() => {
@@ -422,7 +429,9 @@ export class EventBusClient {
 			let eventId = neverNull(wrapper.eventBatchId)
 			let p = Promise.resolve()
 			if (!this._isAlreadyProcessed(groupId, eventId)) {
-				p = this._processEntityEvents(wrapper.eventBatch, groupId, eventId);
+				// TODO: I don't know what we should use here
+				const futureActions = new FutureBatchActions()
+				p = this._processEventBatch(wrapper.eventBatch, groupId, eventId, futureActions);
 			}
 			return p.then(() => {
 				this._lastUpdateTime = Date.now()
@@ -431,9 +440,9 @@ export class EventBusClient {
 		}
 	}
 
-	_processEntityEvents(events: EntityUpdate[], groupId: Id, batchId: Id): Promise<void> {
+	_processEventBatch(events: EntityUpdate[], groupId: Id, batchId: Id, futureActions: FutureBatchActions): Promise<void> {
 		return this._executeIfNotTerminated(() => {
-			return this._cache.entityEventsReceived(events)
+			return this._cache.entityEventsReceived(events, futureActions)
 			           .then(filteredEvents => {
 				           return this._executeIfNotTerminated(() => this._login.entityEventsReceived(filteredEvents))
 				                      .then(() => this._executeIfNotTerminated(() => this._mail.entityEventsReceived(filteredEvents)))
@@ -472,7 +481,7 @@ export class EventBusClient {
 			let promise = Promise.delay(RETRY_AFTER_SERVICE_UNAVAILABLE_ERROR_MS).then(() => {
 				// if we have a websocket reconnect we have to stop retrying
 				if (this._serviceUnavailableRetry === promise) {
-					return this._processEntityEvents(events, groupId, batchId)
+					return this._processEventBatch(events, groupId, batchId, futureActions)
 				} else {
 					throw new CancelledError("stop retry processing after service unavailable due to reconnect")
 				}

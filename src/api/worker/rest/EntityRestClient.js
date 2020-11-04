@@ -15,6 +15,7 @@ import {SessionKeyNotFoundError} from "../../common/error/SessionKeyNotFoundErro
 import {PushIdentifierTypeRef} from "../../entities/sys/PushIdentifier"
 import {NotAuthenticatedError} from "../../common/error/RestError"
 import type {EntityUpdate} from "../../entities/sys/EntityUpdate"
+import {FutureBatchActions} from "../search/EventQueue"
 
 assertWorkerOrNode()
 
@@ -43,10 +44,10 @@ export interface EntityRestInterface {
 
 	/**
 	 * Must be called when entity events are received.
-	 * @param data The entity events that were received.
+	 * @param batch The entity events that were received.
 	 * @return Similar to the events in the data parementer, but reduced by the events which are obsolete.
 	 */
-	entityEventsReceived(data: Array<EntityUpdate>): Promise<Array<EntityUpdate>>;
+	entityEventsReceived(batch: Array<EntityUpdate>, futureActions: FutureBatchActions): Promise<Array<EntityUpdate>>;
 }
 
 /**
@@ -142,7 +143,7 @@ export class EntityRestClient implements EntityRestInterface {
 	/**
 	 * for the admin area (no cache available)
 	 */
-	entityEventsReceived(data: Array<EntityUpdate>): Promise<Array<EntityUpdate>> {
-		return Promise.resolve(data)
+	entityEventsReceived(batch: Array<EntityUpdate>, futureBatchActions: FutureBatchActions): Promise<Array<EntityUpdate>> {
+		return Promise.resolve(batch)
 	}
 }

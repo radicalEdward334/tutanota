@@ -27,6 +27,7 @@ import {lastThrow} from "../../../src/api/common/utils/ArrayUtils"
 import type {MailBody} from "../../../src/api/entities/tutanota/MailBody"
 import type {Mail} from "../../../src/api/entities/tutanota/Mail"
 import type {EntityUpdate} from "../../../src/api/entities/sys/EntityUpdate"
+import {FutureBatchActions} from "../../../src/api/worker/search/EventQueue"
 
 o.spec("entity rest cache", function () {
 
@@ -73,13 +74,17 @@ o.spec("entity rest cache", function () {
 	})
 
 	o.spec("entityEventsReceived", function () {
+		let futureActions: FutureBatchActions
+		o.beforeEach(function () {
+			futureActions = new FutureBatchActions()
+		})
 		o("element create notifications are not put into cache", async function () {
-			await cache.entityEventsReceived([createUpdate(MailBodyTypeRef, (null: any), "id1", OperationType.CREATE)])
+			await cache.entityEventsReceived([createUpdate(MailBodyTypeRef, (null: any), "id1", OperationType.CREATE)], futureActions)
 			o(clientSpy.callCount).equals(0)
 		})
 
 		o("element update notifications are not put into cache", async function () {
-			await cache.entityEventsReceived([createUpdate(MailBodyTypeRef, (null: any), "id1", OperationType.UPDATE)])
+			await cache.entityEventsReceived([createUpdate(MailBodyTypeRef, (null: any), "id1", OperationType.UPDATE)], futureActions)
 			o(clientSpy.callCount).equals(0)
 		})
 
@@ -97,7 +102,7 @@ o.spec("entity rest cache", function () {
 				return Promise.resolve(bodyUpdate)
 			}
 
-			await cache.entityEventsReceived([createUpdate(MailBodyTypeRef, (null: any), createId("id1"), OperationType.UPDATE)])
+			await cache.entityEventsReceived([createUpdate(MailBodyTypeRef, (null: any), createId("id1"), OperationType.UPDATE)], futureActions)
 			o(clientSpy.callCount).equals(1) // entity is loaded from server
 			const body = await cache.entityRequest(MailBodyTypeRef, HttpMethod.GET, null, createId("id1"), null, null)
 			o(body.text).equals("goodbye")
@@ -113,7 +118,7 @@ o.spec("entity rest cache", function () {
 				return Promise.reject(new NotFoundError("not found"))
 			}
 
-			await cache.entityEventsReceived([createUpdate(MailBodyTypeRef, (null: any), createId("id1"), OperationType.DELETE)])
+			await cache.entityEventsReceived([createUpdate(MailBodyTypeRef, (null: any), createId("id1"), OperationType.DELETE)], futureActions)
 			o(clientSpy.callCount).equals(0) // entity is not loaded from server
 			const e = await cache.entityRequest(MailBodyTypeRef, HttpMethod.GET, null, createId("id1"), null, null)
 			                     .catch(e => e)
@@ -132,7 +137,7 @@ o.spec("entity rest cache", function () {
 			await cache.entityEventsReceived([
 				createUpdate(MailTypeRef, getListId(instance), getElementId(instance), OperationType.DELETE),
 				createUpdate(MailTypeRef, newListId, getElementId(instance), OperationType.CREATE)
-			])
+			], futureActions)
 			o(clientSpy.callCount).equals(0)
 
 			clientEntityRequest = () => Promise.reject(new Error("error from test"))
@@ -163,7 +168,7 @@ o.spec("entity rest cache", function () {
 			await cache.entityEventsReceived([
 				createUpdate(MailTypeRef, getListId(mails[0]), getElementId(mails[0]), OperationType.DELETE),
 				createUpdate(MailTypeRef, newListId, getElementId(mails[0]), OperationType.CREATE)
-			])
+			], futureActions)
 
 			clientEntityRequest = () => Promise.reject(new Error("stub error"))
 
@@ -192,7 +197,7 @@ o.spec("entity rest cache", function () {
 			await cache.entityEventsReceived([
 				createUpdate(MailTypeRef, getListId(lastMail), getElementId(lastMail), OperationType.DELETE),
 				createUpdate(MailTypeRef, newListId, getElementId(lastMail), OperationType.CREATE)
-			])
+			], futureActions)
 
 			clientEntityRequest = () => Promise.reject(new Error("stub error"))
 
@@ -204,12 +209,12 @@ o.spec("entity rest cache", function () {
 
 		// list element notifications
 		o("list element create notifications are not put into cache", async function () {
-			await cache.entityEventsReceived([createUpdate(MailTypeRef, "listId1", createId("id1"), OperationType.CREATE)])
+			await cache.entityEventsReceived([createUpdate(MailTypeRef, "listId1", createId("id1"), OperationType.CREATE)], futureActions)
 			o(clientSpy.callCount).equals(0)
 		})
 
 		o("list element update notifications are not put into cache", async function () {
-			await cache.entityEventsReceived([createUpdate(MailTypeRef, "listId1", createId("id1"), OperationType.UPDATE)])
+			await cache.entityEventsReceived([createUpdate(MailTypeRef, "listId1", createId("id1"), OperationType.UPDATE)], futureActions)
 			o(clientSpy.callCount).equals(0)
 		})
 
@@ -226,7 +231,7 @@ o.spec("entity rest cache", function () {
 				return Promise.resolve(mailUpdate)
 			}
 
-			cache.entityEventsReceived([createUpdate(MailTypeRef, "listId1", createId("id1"), OperationType.UPDATE)]).then(() => {
+			cache.entityEventsReceived([createUpdate(MailTypeRef, "listId1", createId("id1"), OperationType.UPDATE)], futureActions).then(() => {
 				o(clientSpy.callCount).equals(1) // entity is loaded from server
 				cache.entityRequest(MailTypeRef, HttpMethod.GET, "listId1", createId("id1"), null, null).then(mail => {
 					o(mail.subject).equals("goodbye")
@@ -239,7 +244,7 @@ o.spec("entity rest cache", function () {
 
 		o("list element is deleted from range", function (done) {
 			setupMailList(true, true).then(originalMails => {
-				return cache.entityEventsReceived([createUpdate(MailTypeRef, "listId1", createId("id2"), OperationType.DELETE)]).then(() => {
+				return cache. entityEventsReceived([createUpdate(MailTypeRef, "listId1", createId("id2"), OperationType.DELETE)], futureActions).then(() => {
 					o(clientSpy.callCount).equals(1) // entity is not loaded from server
 					return cache.entityRequest(MailTypeRef, HttpMethod.GET, "listId1", null, null, {
 						start: GENERATED_MIN_ID,

@@ -5,13 +5,79 @@ import {containsEventOfType} from "../../common/utils/Utils"
 import {ConnectionError, ServiceUnavailableError} from "../../common/error/RestError"
 import type {WorkerImpl} from "../WorkerImpl"
 import type {EntityUpdate} from "../../entities/sys/EntityUpdate"
+import {isSameId} from "../../common/EntityFunctions"
+import {last} from "../../common/utils/ArrayUtils"
 
 export type QueuedBatch = {
 	events: EntityUpdate[], groupId: Id, batchId: Id
 }
 
+/**
+ * Holder for the final known state during processing EntityUpdates.
+ *
+ * deleted and moved hold the latest update for the given instance Id.
+ * After such latest event is reached, it must be removed with processedMove/processedDelete.
+ */
+export class FutureBatchActions {
+	+lastDelete: Map<Id, EntityUpdate> = new Map();
+	/** Contains create event from the "delete + create" batch */
+	+lastMove: Map<Id, EntityUpdate> = new Map()
 
-export type FutureBatchActions = {deleted: Map<Id, EntityUpdate>, moved: Map<Id, EntityUpdate>};
+	populate(batches: $ReadOnlyArray<$ReadOnlyArray<EntityUpdate>>) {
+		for (let batch of batches) {
+			for (let event of batch) {
+				if (event.operation === OperationType.DELETE) {
+					// if no create event is available the instance has been deleted
+					if (!containsEventOfType(batch, OperationType.CREATE, event.instanceId)) {
+						this.lastDelete.set(event.instanceId, event)
+					}
+				} else if (event.operation === OperationType.CREATE) {
+					// create and delete in one batch is a move operation
+					if (containsEventOfType(batch, OperationType.DELETE, event.instanceId)) {
+						this.lastMove.set(event.instanceId, event)
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Should be called after event is processed. It updates latest operation if necessary.
+	 */
+	processedMove(update: EntityUpdate) {
+		if (update.operation !== OperationType.CREATE) {
+			throw new Error("Move update is processed when CREATE is processed")
+		}
+		const latest = this.lastMove.get(update.instanceId)
+		if (latest && isSameId(update._id, latest._id)) {
+			this.lastMove.delete(update.instanceId)
+		}
+	}
+
+	/**
+	 * Should be called after event is processed. It updates latest operation if necessary.
+	 */
+	processedDelete(update: EntityUpdate) {
+		if (update.operation !== OperationType.DELETE) {
+			throw new Error("Delete update is processed when DELETE is processed")
+		}
+
+		const latest = this.lastDelete.get(update.instanceId)
+		if (latest && isSameId(update._id, latest._id)) {
+			this.lastDelete.delete(update.instanceId)
+		}
+	}
+
+	willBeMovedAfter(update: EntityUpdate): boolean {
+		const lastMove = this.lastMove.get(update.instanceId)
+		return lastMove != null &&  !isSameId(lastMove._id, update._id)
+	}
+
+	willBeDeletedAfter(update: EntityUpdate): boolean {
+		const lastDelete = this.lastDelete.get(update.instanceId)
+		return lastDelete != null && !isSameId(lastDelete._id, update._id)
+	}
+}
 
 export class EventQueue {
 	_processingActive: boolean
@@ -26,7 +92,7 @@ export class EventQueue {
 		this._processingActive = false
 		this._eventQueue = []
 		this._processNextQueueElement = processNextQueueElement
-		this._futureActions = {deleted: new Map(), moved: new Map()}
+		this._futureActions = new FutureBatchActions()
 		this._paused = false
 	}
 
@@ -66,21 +132,7 @@ export class EventQueue {
 	}
 
 	addBatches(batches: QueuedBatch[]) {
-		for (let batch of batches) {
-			for (let event of batch.events) {
-				if (event.operation === OperationType.DELETE) {
-					// if no create event is available the instance has been deleted
-					if (!containsEventOfType(batch.events, OperationType.CREATE, event.instanceId)) {
-						this._futureActions.deleted.set(event.instanceId, event)
-					}
-				} else if (event.operation === OperationType.CREATE) {
-					// create and delete in one batch is a move operation
-					if (containsEventOfType(batch.events, OperationType.DELETE, event.instanceId)) {
-						this._futureActions.moved.set(event.instanceId, event)
-					}
-				}
-			}
-		}
+		this._futureActions.populate(batches.map(b => b.events))
 		for (let el of batches) {
 			this._eventQueue.push(el)
 		}

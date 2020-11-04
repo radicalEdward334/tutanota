@@ -34,7 +34,7 @@ import {createEntityUpdate} from "../../../../src/api/entities/sys/EntityUpdate"
 import {browserDataStub, makeCore, mock, replaceAllMaps, spy} from "../../TestUtils"
 import {downcast, neverNull} from "../../../../src/api/common/utils/Utils"
 import {fixedIv} from "../../../../src/api/worker/crypto/CryptoUtils"
-import type {FutureBatchActions} from "../../../../src/api/worker/search/EventQueue"
+import {FutureBatchActions} from "../../../../src/api/worker/search/EventQueue"
 import {EventQueue} from "../../../../src/api/worker/search/EventQueue"
 import {getDayShifted, getStartOfDay} from "../../../../src/api/common/utils/DateUtils"
 import {createMailboxGroupRoot} from "../../../../src/api/entities/tutanota/MailboxGroupRoot"
@@ -64,7 +64,7 @@ class FixedDateProvider implements DateProvider {
 }
 
 const dbMock: any = {iv: fixedIv}
-const emptyFutureActions: FutureBatchActions = {deleted: new Map(), moved: new Map()}
+const emptyFutureActions = new FutureBatchActions()
 const emptyFutureActionsObj = {deleted: {}, moved: {}}
 const mailId = "L-dNNLe----0"
 
@@ -933,15 +933,14 @@ function _prepareProcessEntityTests(indexingEnabled: boolean, mailState: MailSta
 }
 
 function makeFutureActions(moved: {[string]: EntityUpdate}, deleted: {[string]: EntityUpdate}): FutureBatchActions {
-	const movedMap = new Map()
+	const actions = new FutureBatchActions()
 	for (let mk of Object.keys(moved)) {
-		movedMap.set(mk, moved[mk])
+		actions.lastMove.set(mk, moved[mk])
 	}
-	const deletedMap = new Map()
 	for (let dk of Object.keys(deleted)) {
-		deletedMap.set(dk, deleted[dk])
+		actions.lastDelete.set(dk, deleted[dk])
 	}
-	return {moved: movedMap, deleted: deletedMap}
+	return actions
 }
 
 
