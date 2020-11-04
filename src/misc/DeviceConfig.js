@@ -4,7 +4,7 @@ import {themeId} from "../gui/theme"
 import {client} from "./ClientDetector"
 import type {CalendarViewTypeEnum} from "../calendar/CalendarView"
 import {uint8ArrayToBase64} from "../api/common/utils/Encoding"
-import type {Template} from "../settings/TemplateViewList"
+import type {Template} from "../settings/TemplateListView"
 
 assertMainOrNodeBoot()
 

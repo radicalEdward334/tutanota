@@ -11,8 +11,11 @@ import stream from "mithril/stream/stream.js"
 import {Keys} from "../api/common/TutanotaConstants"
 import {TemplateDisplayer} from "./TemplateDisplayer"
 import {searchForID, searchInContent} from "./TemplateSearchFilter.js"
-import type {Template} from "../settings/TemplateViewList"
-import {loadTemplates} from "../settings/TemplateViewList"
+import type {Template} from "../settings/TemplateListView"
+import {loadTemplates} from "../settings/TemplateListView"
+import {Icons} from "../gui/base/icons/Icons"
+import {Icon} from "../gui/base/Icon"
+import {debounce} from "../api/common/utils/Utils"
 
 
 export class TemplatePopup implements ModalComponent {
@@ -29,8 +32,9 @@ export class TemplatePopup implements ModalComponent {
 	_selected: boolean
 	_foundResults: boolean
 	_cursorHover: boolean
+	_expanded: boolean
 	_height: string
-	_currentindex: number = 0
+	_currentIndex: number = 0
 
 
 	constructor(rect: PosRect, onSubmit: (string) => void) {
@@ -74,7 +78,7 @@ export class TemplatePopup implements ModalComponent {
 				key: Keys.RETURN,
 				enabled: () => true,
 				exec: () => {
-					this._onSubmit(this._searchResults[this._currentindex].content)
+					this._onSubmit(this._searchResults[this._currentIndex].content)
 					this._close()
 					m.redraw()
 				},
@@ -83,14 +87,18 @@ export class TemplatePopup implements ModalComponent {
 		]
 	}
 
+	oncreate: ((Vnode<*>)  => void) = () => {
+		this._expanded = true
+	}
+
 	view: () => Children = () => {
 		return m(".flex.abs.elevated-bg.plr.border-radius.dropdown-shadow", { // Main Wrapper
 				style: {
-					width: "600px",
+					width: this._expanded ? "750px" : "375px",
 					margin: "1px",
 					top: px(this._rect.top),
 					left: px(this._rect.left),
-					flexDirection: "column",
+					flexDirection: "row",
 					height: this._height + "px",
 					cursor: this._cursorHover ? "pointer" : "default",
 				},
@@ -98,95 +106,117 @@ export class TemplatePopup implements ModalComponent {
 					e.stopPropagation() /* stops click from going through component*/
 				},
 			}, [
-				m(".flex", { // Header Wrapper
-					style: {
-						flexDirection: "row",
-						height: "70px",
-						marginBottom: "-18px",
-					},
-					onkeydown: (e) => { /* simulate scroll with arrow keys */
-						if (e.keyCode === 27) { // ESC
-							this._close
-						} else if (e.keyCode === 40) { // DOWN
-							this._changeSelection("next")
-							this._scrollDom.scroll({
-								top: (93 * this._currentindex),
-								left: 0,
-								behavior: 'smooth'
-							})
-						} else if (e.keyCode === 38) { // UP
-							e.preventDefault()
-							this._changeSelection("previous")
-							this._scrollDom.scroll({
-								top: (93 * this._currentindex),
-								left: 0,
-								behavior: 'smooth'
-							})
-						}
-					},
-				}, [
-					m("", {
-							style: {
-								marginTop: "-10px",
-								flex: "1 0 auto"
-							},
-						}, m(TextFieldN, this._filterTextAttrs)
-					), // Filter Text
-				]), // Header Wrapper END
-				m(".flex.flex-column.scroll", { // Template Text
+				m(".flex.flex-column", {style: {height: "340px", width: "375px"}}, [
+					m(".flex", { // Header Wrapper
 						style: {
-							height: this._height,
-							overflowY: "show"
+							flexDirection: "row",
+							height: "70px",
+							marginBottom: "-18px",
+							width: "375px"
 						},
-						oncreate: (vnode) => {
-							this._scrollDom = vnode.dom
-						},
-					}, this._foundResults ?
-					this._searchResults.map((template, index) => {
-						this._selected = index === this._currentindex
-						return m("", {
-							onclick: (e) => {
-								this._onSubmit(this._searchResults[index].content)
-								this._close()
-								e.stopPropagation()
-							},
-							onmouseover: () => this._cursorHover = true,
-							onmouseleave: () => this._cursorHover = false,
-							class: this._selected ? "row-selected" : "", /* show row as selected when using arrow keys */
-							style: {
-								borderLeft: this._selected ? "4px solid" : "4px solid transparent",
+						onkeydown: (e) => { /* simulate scroll with arrow keys */
+							if (e.keyCode === 27) { // ESC
+								this._close
+							} else if (e.keyCode === 40) { // DOWN
+								this._changeSelection("next")
+								this._scrollDom.scroll({
+									top: (47.7167 * this._currentIndex),
+									left: 0,
+									behavior: 'smooth'
+								})
+							} else if (e.keyCode === 38) { // UP
+								e.preventDefault()
+								this._changeSelection("previous")
+								this._scrollDom.scroll({
+									top: (47.7167 * this._currentIndex),
+									left: 0,
+									behavior: 'smooth'
+								})
 							}
-						}, m(TemplateDisplayer, {template}))
-					})
-					: m(".row-selected", {style:{marginTop: "10px", textAlign: "center"}},"Nothing found")
-				), // Template Text END
+						},
+					}, [
+						m("", {
+								style: {
+									marginTop: "-10px",
+									flex: "1 0 auto",
+								},
+							}, m(TextFieldN, this._filterTextAttrs)
+						), // Filter Text
+					]), // Header Wrapper END
+					m(".flex.flex-column.scroll", { // Template Text
+							style: {
+								height: this._height,
+								overflowY: "show",
+								marginBottom: "3px",
+								width: "375px"
+							},
+							oncreate: (vnode) => {
+								this._scrollDom = vnode.dom
+							},
+						}, this._foundResults ?
+						this._searchResults.map((template, index) => {
+							this._selected = index === this._currentIndex
+							return m(".flex", {
+									onclick: (e) => {
+										this._onSubmit(this._searchResults[index].content)
+										this._close()
+										e.stopPropagation()
+									},
+									onmouseover: () => this._cursorHover = true,
+									onmouseleave: () => this._cursorHover = false,
+									class: this._selected ? "row-selected" : "", /* show row as selected when using arrow keys */
+									style: {
+										borderLeft: this._selected ? "4px solid" : "4px solid transparent",
+									}
+								}, [
+									m(TemplateDisplayer, {template}),
+									this._selected ? m(Icon, {icon: Icons.ArrowForward, style: {marginTop: "auto", marginBottom: "auto"}}) : null
+								]
+							)
+						})
+						: m(".row-selected", {style: {marginTop: "10px", textAlign: "center"}}, "Nothing found")
+					), // Template Text END
+				]),
+			m(".flex.flex-column", {style:{marginLeft: "7px"}} , [
+				m("", {style:{marginTop: "7px", fontSize: "18px", fontWeight: "bold", marginBottom: "5px"}} , this._searchResults[this._currentIndex].title),
+				m.trust(this._searchResults[this._currentIndex].content)
+			])
 			]
 		)
 	}
 
-	_setProperties() { /* calculate height with certain amount of templates and reset selection to first template */
-		if (this._searchResults.length === 0) {
+	_setProperties() { /* improvement to dynamically calculate height with certain amount of templates and reset selection to first template */
+		if (this._searchResults.length < 7 && this._searchResults.length !== 0) {
+			this._foundResults = true
+			this._height = (this._searchResults.length * 47.7167) + 10 + "px"
+		} else if (this._searchResults.length === 0) {
 			this._foundResults = false
 			this._height = "40px"
-		} else if (this._searchResults.length === 1) {
-			this._height = "110px"
+		} else {
 			this._foundResults = true
-		} else if (this._searchResults.length === 2) {
-			this._height = "190px"
-			this._foundResults = true
-		} else if (this._searchResults.length >= 3) {
-			this._height = "270px"
-			this._foundResults = true
+			this._height = "285px"
 		}
-		this._currentindex = 0
+		this._currentIndex = 0
 	}
 
-	_changeSelection(action: string) { /* count up or down in templates */
-		if (action === "next" && this._currentindex <= this._searchResults.length - 2) {
-			this._currentindex++
+	_expanderOpenClose: ("open" | "close") => void = debounce(550, (state) => {
+		console.log("opened")
+		if (state === "open") {
+			this._expanded = true
+			m.redraw()
+		} else if (state === "close") {
+			this._expanded = false
+			m.redraw()
 		}
-		if (action === "previous" && this._currentindex > 0) {
-			this._currentindex--
+	})
+
+	_changeSelection(action: string) { /* count up or down in templates */
+		if (action === "next" && this._currentIndex <= this._searchResults.length - 2) {
+			this._expanderOpenClose("open")
+			this._currentIndex++
+		} else if (action === "previous" && this._currentIndex > 0) {
+			this._expanderOpenClose("open")
+			this._currentIndex--
 		}
 	}
 

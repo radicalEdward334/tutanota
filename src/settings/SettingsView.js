@@ -45,7 +45,7 @@ import {navButtonRoutes} from "../misc/RouteChange"
 import {size} from "../gui/size"
 import {FolderColumnView} from "../gui/base/FolderColumnView"
 import {nativeApp} from "../native/NativeWrapper"
-import {TemplateViewList} from "./TemplateViewList"
+import {TemplateListView} from "./TemplateListView"
 
 assertMainOrNode()
 
@@ -67,7 +67,7 @@ export class SettingsView implements CurrentView {
 		this._userFolders = [
 			new SettingsFolder("login_label", () => BootIcons.Contacts, "login", () => new LoginSettingsViewer()),
 			new SettingsFolder("email_label", () => BootIcons.Mail, "mail", () => new MailSettingsViewer()),
-			new SettingsFolder("template_label", () => Icons.Folder, "template", () => new TemplateViewList(this)),
+			new SettingsFolder("template_label", () => Icons.Folder, "template", () => new TemplateListView(this)),
 			new SettingsFolder("appearanceSettings_label", () => Icons.Palette, "appearance", () => new AppearanceSettingsViewer()),
 		]
 

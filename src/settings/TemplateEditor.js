@@ -9,8 +9,8 @@ import {TextFieldN} from "../gui/base/TextFieldN"
 import type {DialogHeaderBarAttrs} from "../gui/base/DialogHeaderBar"
 import {ButtonType} from "../gui/base/ButtonN"
 import {Dialog} from "../gui/base/Dialog"
-import {createTemplate} from "./TemplateViewList"
-import type {Template} from "./TemplateViewList"
+import {createTemplate} from "./TemplateListView"
+import type {Template} from "./TemplateListView"
 import type {EntityEventsListener, EntityUpdateData} from "../api/main/EventController"
 import {elementIdPart, getLetId, listIdPart} from "../api/common/EntityFunctions"
 import {OperationType} from "../api/common/TutanotaConstants"
@@ -61,9 +61,7 @@ export class TemplateEditor {
 		}
 
 		let dialogOkAction = () => {
-
 			this._templateContents(this._templateContentEditor.getValue())
-
 			if (!this._templateTitle() || !this._templateContents()) {
 				Dialog.error(() => "dont do that")
 				return

@@ -14,7 +14,7 @@ import {SettingsView} from "./SettingsView"
 import {TemplateDetailsViewer} from "./TemplateDetailsViewer"
 import {TemplateEditor} from "./TemplateEditor"
 
-export class TemplateViewList implements UpdatableSettingsViewer {
+export class TemplateListView implements UpdatableSettingsViewer {
 	_templateFilter: Stream<string>
 	_existingTitle: string
 	_keyList: Array<Template>
@@ -44,7 +44,7 @@ export class TemplateViewList implements UpdatableSettingsViewer {
 				return Promise.resolve(this._keyList.find(template => isSameId(elementIdPart(template._id), elementId)))
 			},
 			sortCompare: (a: Template, b: Template) => {
-				// See compare function of Array.sort
+				// TODO: See compare function of Array.sort
 				return 0
 			},
 			elementSelected: (templates: Array<Template>, elementClicked, selectionChanged, multiSelectionActive) => {
@@ -53,7 +53,11 @@ export class TemplateViewList implements UpdatableSettingsViewer {
 						return this.entityEventsReceived(updates)
 					})
 					this._settingsView.focusSettingsDetailsColumn()
+				} else if (templates.length === 0 && this._settingsView.detailsViewer) {
+					this._settingsView.detailsViewer = null
+					m.redraw()
 				}
+
 			},
 			createVirtualRow: () => {
 				return new TemplateRow()
@@ -108,7 +112,10 @@ export class TemplateViewList implements UpdatableSettingsViewer {
 	entityEventsReceived(updates: $ReadOnlyArray<EntityUpdateData>): Promise<void> {
 		return Promise.each(updates, update => {
 			return this._list.entityEventReceived( update.instanceId, update.operation)
-		}).then(() => m.redraw())
+		}).then(() => {
+			this._settingsView.detailsViewer = null
+			m.redraw()
+		})
 	}
 
 	/*reloadList(newTemplate: Template) {
@@ -186,5 +193,5 @@ export type Template = {
 	title: string,
 	id: ?string,
 	content: string,
-	index: number
+	index: number,
 }
