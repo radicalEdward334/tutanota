@@ -3,7 +3,7 @@
 import type {WizardPageAttrs, WizardPageN} from "../gui/base/WizardDialogN"
 import m from "mithril"
 import {GiftCardSelector} from "./GiftCardSelector"
-import type {CreateGiftCardData} from "./GiftCardWizard"
+import type {CreateGiftCardData} from "./CreateGiftCardWizard"
 import {GiftCardOverview} from "./GiftCardOverview"
 
 
