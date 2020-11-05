@@ -28,7 +28,7 @@ type GiftCardRedeemData = {
 	mailAddress: Stream<string>,
 	password: Stream<string>,
 	credentialsMethod: GetCredentialsMethod,
-	newAccountData: ?NewAccountData,
+	newAccountData: Stream<?NewAccountData>,
 }
 
 class GiftCardWelcomePage implements WizardPageN<GiftCardRedeemData> {
@@ -72,15 +72,18 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 	renderLoginPage(data: GiftCardRedeemData, dom: HTMLElement): Children {
 		const loginFormAttrs = {
 			onSubmit: (mailAddress, password) => {
-				// If they try to login with a mail address that is stored, we want to swap out the old session with a new one
-				showProgressDialog(
-					"pleaseWait_msg",
+				const loginPromise =
 					logins.createSession(mailAddress, password, client.getIdentifier(), false, false)
 					      .then(_ => {
 						      console.log(logins.getUserController())
 						      emitWizardEvent(dom, WizardEventType.SHOWNEXTPAGE)
-					      }))
-
+					      })
+					      .catch(e => {
+						      // TODO Error handling
+						      Dialog.error(() => "Error logging in")
+					      })
+				// If they try to login with a mail address that is stored, we want to swap out the old session with a new one
+				showProgressDialog("pleaseWait_msg", loginPromise)
 			},
 			mailAddress: data.mailAddress,
 			password: data.password,
@@ -118,7 +121,14 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 
 	renderSignupPage(data: GiftCardRedeemData, dom: HTMLElement): Children {
 		const signupFormAttrs: SignupFormAttrs = {
-			newAccountData: stream(null),
+			submitHandler: newAccountData => {
+				console.log("new account data: ", newAccountData)
+				if (newAccountData) {
+					// TODO WHY DOES NOT THIS WORKING?
+					emitWizardEvent(dom, WizardEventType.SHOWNEXTPAGE)
+				}
+			},
+			readonly: false,
 			isBusinessUse: () => false,
 			isPaidSubscription: () => false,
 			campaign: () => null
@@ -128,54 +138,56 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 	}
 }
 
+class RedeemGiftCardPage implements WizardPageN<GiftCardRedeemData> {
+	view(vnode: Vnode<WizardPageAttrs<GiftCardRedeemData>>): Children {
+		return "Implement Me"
+	}
+}
+
 
 export function loadUseGiftCardWizard(giftCard: GiftCard): Promise<Dialog> {
 	const years = neverNull(giftCardDurationsInYears.get(ValueToGiftCardDuration[giftCard.duration]))
 	return loadUpgradePrices().then(prices => {
 
 		const giftCardRedeemData: GiftCardRedeemData = {
-			newAccountData: null,
+			newAccountData: stream(null),
 			mailAddress: stream(""),
 			password: stream(""),
 			credentialsMethod: "signup"
 		}
+
+
 		const wizardPages = [
 			{
 				attrs: {
 					data: giftCardRedeemData,
-					headerTitle(): string {
-						return "You got a Gift Card"
-					},
-					nextAction(showErrorDialog: boolean): Promise<boolean> {
-						return Promise.resolve(true)
-					},
-					isSkipAvailable(): boolean {
-						return true
-					},
-					isEnabled(): boolean {
-						return true
-					},
+					headerTitle: () => "You got a Gift Card :-)",
+					nextAction: (_) => Promise.resolve(true),
+					isSkipAvailable: () => false,
+					isEnabled: () => true
 				},
 				componentClass: GiftCardWelcomePage
 			},
 			{
 				attrs: {
 					data: giftCardRedeemData,
-					headerTitle(): string {
-						return "You got a Gift Card"
-					},
-					nextAction(showErrorDialog: boolean): Promise<boolean> {
-						return Promise.resolve(logins.isGlobalAdminUserLoggedIn())
-					},
-					isSkipAvailable(): boolean {
-						return false
-					},
-					isEnabled(): boolean {
-						return true
-					}
+					headerTitle: () => giftCardRedeemData.credentialsMethod === "signup" ? "Create account" : "Select account",
+					nextAction: (showErrorDialog: boolean) => Promise.resolve(true),
+					isSkipAvailable: () => false,
+					isEnabled: () => true
 				},
 				componentClass: GiftCardCredentialsPage
 			},
+			{
+				attrs: {
+					data: giftCardRedeemData,
+					headerTitle: () => "Confirm",
+					nextAction: (_) => Promise.resolve(true),
+					isSkipAvailable: () => false,
+					isEnabled: () => true
+				},
+				componentClass: RedeemGiftCardPage
+			}
 		]
 
 		const wizardBuilder = createWizardDialog(giftCardRedeemData, wizardPages, () => {

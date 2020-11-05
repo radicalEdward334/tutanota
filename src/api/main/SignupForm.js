@@ -35,10 +35,12 @@ import {uint8ArrayToBase64} from "../common/utils/Encoding"
 import {CheckboxN} from "../../gui/base/CheckboxN"
 
 export type SignupFormAttrs = {
-	newAccountData: Stream<?NewAccountData>;
-	isBusinessUse: lazy<boolean>;
-	isPaidSubscription: lazy<boolean>;
-	campaign: lazy<?string>
+	submitHandler: ?NewAccountData => void,
+	isBusinessUse: lazy<boolean>,
+	isPaidSubscription: lazy<boolean>,
+	campaign: lazy<?string>,
+	prefilledMailAddress?: string,
+	readonly: boolean,
 }
 
 export class SignupForm implements MComponent<SignupFormAttrs> {
@@ -60,7 +62,6 @@ export class SignupForm implements MComponent<SignupFormAttrs> {
 
 	view(vnode: Vnode<SignupFormAttrs>): Children {
 		const a = vnode.attrs
-		const newAccountData = a.newAccountData
 
 		const confirmTermsCheckBoxAttrs: CheckboxAttrs = {
 			label: renderTermsLabel,
@@ -71,7 +72,11 @@ export class SignupForm implements MComponent<SignupFormAttrs> {
 			checked: this._confirmAge
 		}
 
-		const createAccount = () => {
+
+		const submit = () => {
+			if (a.readonly) {
+				return a.submitHandler(null)
+			}
 			const errorMessage = this._mailAddressForm.getErrorMessageId() || this._passwordForm.getErrorMessageId()
 				|| (!this._confirmTerms() ? "termsAcceptedNeutral_msg" : null)
 
@@ -94,27 +99,21 @@ export class SignupForm implements MComponent<SignupFormAttrs> {
 						a.isPaidSubscription(),
 						a.campaign()
 					).then(newAccountData => {
-						a.newAccountData(newAccountData)
+						a.submitHandler(newAccountData)
 					})
 				}
 			})
 		}
 
 		return m("#signup-account-dialog.flex-center", m(".flex-grow-shrink-auto.max-width-m.pt.pb.plr-l", [
-				newAccountData()
-					? m("div", [
-						m(TextFieldN, {
-							label: 'mailAddress_label',
-							value: stream(neverNull(newAccountData()).mailAddress),
-							disabled: true
-						}),
-						m(".mt-l.mb-l", m(ButtonN, {
-							label: 'next_action',
-							type: ButtonType.Login,
-							click: () => emitWizardEvent(vnode.dom, WizardEventType.SHOWNEXTPAGE)
-						}))
-					])
-					: m("div", [
+			m("div",
+				a.readonly
+					? m(TextFieldN, {
+						label: "mailAddressNeutral_msg",
+						value: stream(a.prefilledMailAddress),
+						disabled: true
+					})
+					: [
 						m(this._mailAddressForm),
 						m(this._passwordForm),
 						(getWhitelabelRegistrationDomains().length > 0) ? m(TextFieldN, {
@@ -125,7 +124,7 @@ export class SignupForm implements MComponent<SignupFormAttrs> {
 						m(CheckboxN, confirmAgeCheckBoxAttrs),
 						m(".mt-l.mb-l", m(ButtonN, {
 							label: "next_action",
-							click: () => createAccount(),
+							click: submit,
 							type: ButtonType.Login,
 						})),
 					])
