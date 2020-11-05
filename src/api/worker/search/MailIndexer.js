@@ -538,7 +538,7 @@ export class MailIndexer {
 					futureActions.processedMove(event)
 
 					// do not execute move operation if there is a delete event or another move event.
-					if (futureActions.lastDelete.has(event.instanceId)
+					if (futureActions.futureDelete.has(event.instanceId)
 						|| (finalDestinationEvent && !isSameId(finalDestinationEvent.instanceListId, event.instanceListId))) {
 						return Promise.resolve()
 					} else {
@@ -547,7 +547,7 @@ export class MailIndexer {
 				} else {
 					// do not create the index entry if the element has been deleted or moved
 					// if moved the element will be indexed in the move event.
-					if (futureActions.lastDelete.has(event.instanceId) || futureActions.lastMove.has(event.instanceId)) {
+					if (futureActions.futureDelete.has(event.instanceId) || futureActions.lastMove.has(event.instanceId)) {
 						return Promise.resolve()
 					} else {
 						return this.processNewMail(event).then((result) => {
@@ -559,7 +559,7 @@ export class MailIndexer {
 				}
 			} else if (event.operation === OperationType.UPDATE) {
 				// do not execute update if event has been deleted.
-				if (futureActions.lastDelete.has(event.instanceId)) {
+				if (futureActions.futureDelete.has(event.instanceId)) {
 					return Promise.resolve()
 				}
 

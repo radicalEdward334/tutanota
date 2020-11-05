@@ -938,7 +938,7 @@ function makeFutureActions(moved: {[string]: EntityUpdate}, deleted: {[string]: 
 		actions.lastMove.set(mk, moved[mk])
 	}
 	for (let dk of Object.keys(deleted)) {
-		actions.lastDelete.set(dk, deleted[dk])
+		actions.futureDelete.set(dk, deleted[dk])
 	}
 	return actions
 }

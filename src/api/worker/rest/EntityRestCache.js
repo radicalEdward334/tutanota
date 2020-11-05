@@ -480,9 +480,16 @@ export class EntityRestCache implements EntityRestInterface {
 					           .return(update)
 					           .catch(this._handleProcessingError)
 				}
+			} else {
+				return update
+			}
+		} else {
+			if (futureActions.willBeMovedAfter(update) || futureActions.willBeDeletedAfter(update)) {
+				return null
+			} else {
+				return update
 			}
 		}
-		return update
 	}
 
 	_processUpdateEvent(typeRef: TypeRef<*>, update: EntityUpdate, futureActions: FutureBatchActions): $Promisable<EntityUpdate | null> {
@@ -504,7 +511,7 @@ export class EntityRestCache implements EntityRestInterface {
 		return update
 	}
 
-	_handleProcessingError(e: Error): ?EntityUpdate {
+	_handleProcessingError(e: Error): EntityUpdate | null {
 		// skip event if NotFoundError. May occur if an entity is removed in parallel.
 		// Skip event if NotAuthorizedError. May occur if the user was removed from the owner group.
 		if (e instanceof NotFoundError || e instanceof NotAuthorizedError) {

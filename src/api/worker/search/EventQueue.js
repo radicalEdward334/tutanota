@@ -19,7 +19,7 @@ export type QueuedBatch = {
  * After such latest event is reached, it must be removed with processedMove/processedDelete.
  */
 export class FutureBatchActions {
-	+lastDelete: Map<Id, EntityUpdate> = new Map();
+	+futureDelete: Map<Id, EntityUpdate> = new Map();
 	/** Contains create event from the "delete + create" batch */
 	+lastMove: Map<Id, EntityUpdate> = new Map()
 
@@ -29,7 +29,7 @@ export class FutureBatchActions {
 				if (event.operation === OperationType.DELETE) {
 					// if no create event is available the instance has been deleted
 					if (!containsEventOfType(batch, OperationType.CREATE, event.instanceId)) {
-						this.lastDelete.set(event.instanceId, event)
+						this.futureDelete.set(event.instanceId, event)
 					}
 				} else if (event.operation === OperationType.CREATE) {
 					// create and delete in one batch is a move operation
@@ -62,9 +62,9 @@ export class FutureBatchActions {
 			throw new Error("Delete update is processed when DELETE is processed")
 		}
 
-		const latest = this.lastDelete.get(update.instanceId)
+		const latest = this.futureDelete.get(update.instanceId)
 		if (latest && isSameId(update._id, latest._id)) {
-			this.lastDelete.delete(update.instanceId)
+			this.futureDelete.delete(update.instanceId)
 		}
 	}
 
@@ -74,7 +74,7 @@ export class FutureBatchActions {
 	}
 
 	willBeDeletedAfter(update: EntityUpdate): boolean {
-		const lastDelete = this.lastDelete.get(update.instanceId)
+		const lastDelete = this.futureDelete.get(update.instanceId)
 		return lastDelete != null && !isSameId(lastDelete._id, update._id)
 	}
 }
