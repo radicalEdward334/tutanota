@@ -562,6 +562,13 @@ export class MailIndexer {
 				if (futureActions.futureDelete.has(event.instanceId)) {
 					return Promise.resolve()
 				}
+				// If the instance is moved later we shouldn't try to load it because it's not there anymore. We shouldn't just skip the
+				// update and move it later because this would move the old instance, we should re-insert it. We delete it at this point.
+				// It won't be in the index until we get to the actual move operation but we shouldn't show outdated result anyway.
+				// If we remove it here, later the move operation won't find it in the cache and will re-download it, just like we want.
+				if (futureActions.willBeMovedAfter(event)) {
+					return this._core._processDeleted(event, indexUpdate)
+				}
 
 				return this._defaultCachingEntity.load(MailTypeRef, [event.instanceListId, event.instanceId], null)
 				           .then(mail => {
