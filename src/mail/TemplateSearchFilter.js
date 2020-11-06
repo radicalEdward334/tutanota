@@ -28,15 +28,6 @@ export function searchInContent(input: string, list: any[]): Array<any>{
 			let tempTitle = list[i].title.toLowerCase()
 			if (tempTitle.includes(queryString)) {
 				results.push(list[i])
-			} else {
-				if (list[i].content !== null) { // search in content if title not includes queryString
-					let tempContent = list[i].content.toLowerCase()
-					if (tempContent.includes(queryString)) {
-						resultsContent.push(list[i])
-					}
-				} else {
-					console.log(list[i], "content is null?")
-				}
 			}
 		} else {
 			console.log(list[i], "title is null?")

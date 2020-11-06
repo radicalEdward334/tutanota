@@ -21,12 +21,6 @@ export class TemplateDetailsViewer {
 	_templateContentEditor: HtmlEditor
 
 	constructor(template: Template, keyList: Array<Template>, entityUpdate: EntityEventsListener) {
-		this._templateContentEditor = new HtmlEditor(() => "Content")
-			.showBorders()
-			.setMinHeight(200)
-			.setEnabled(false)
-		this._templateContentEditor.setValue(template.content)
-
 
 		const titleAttrs: TextFieldAttrs = {
 			label: () => "Title",
@@ -73,6 +67,8 @@ export class TemplateDetailsViewer {
 			}
 		}
 
+		// TODO: Render Content for every language. (Ask Ivan)
+
 		this.view = () => {
 			return m("#user-viewer.fill-absolute.scroll.plr-l.pb-floating", [
 				m(".h4.mt-l", [
@@ -83,7 +79,7 @@ export class TemplateDetailsViewer {
 				m("", [
 					m(TextFieldN, titleAttrs),
 					m(TextFieldN, idAttrs),
-					m(this._templateContentEditor)
+
 				])
 			])
 		}

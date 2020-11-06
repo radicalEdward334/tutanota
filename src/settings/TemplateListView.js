@@ -163,7 +163,7 @@ export class TemplateRow {
 
 }
 
-export function createTemplate(title: string, id: string, content: string, index: number): Template {
+export function createTemplate(title: string, id: string, content: {string: string}, index: number): Template {
 	return {
 		_id: ["localstorage", title], // should be replaced to real list id when stored as list in database
 		title: title,
@@ -192,6 +192,6 @@ export type Template = {
 	_id: IdTuple;
 	title: string,
 	id: ?string,
-	content: string,
+	content: {[string]: string},
 	index: number,
 }

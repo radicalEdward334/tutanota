@@ -16,6 +16,8 @@ import {loadTemplates} from "../settings/TemplateListView"
 import {Icons} from "../gui/base/icons/Icons"
 import {Icon} from "../gui/base/Icon"
 import {debounce} from "../api/common/utils/Utils"
+import {DropDownSelectorN} from "../gui/base/DropDownSelectorN"
+import {DropDownSelector} from "../gui/base/DropDownSelector"
 
 
 export class TemplatePopup implements ModalComponent {
@@ -78,7 +80,10 @@ export class TemplatePopup implements ModalComponent {
 				key: Keys.RETURN,
 				enabled: () => true,
 				exec: () => {
-					this._onSubmit(this._searchResults[this._currentIndex].content)
+					console.log(this._searchResults[this._currentIndex].content)
+					var text = this._searchResults[this._currentIndex].content["English"]
+					console.log(text)
+					this._onSubmit(text)
 					this._close()
 					m.redraw()
 				},
@@ -92,6 +97,13 @@ export class TemplatePopup implements ModalComponent {
 	}
 
 	view: () => Children = () => {
+
+		let availableLanguages = Object.keys(this._searchResults[this._currentIndex].content).map(language => {
+			console.log("Keys: ", Object.keys(this._searchResults[this._currentIndex].content), "available Languages: ", availableLanguages)
+			return {name: language, value: language}
+		})
+		let display = stream(availableLanguages[0].value)
+
 		return m(".flex.abs.elevated-bg.plr.border-radius.dropdown-shadow", { // Main Wrapper
 				style: {
 					width: this._expanded ? "750px" : "375px",
@@ -137,7 +149,7 @@ export class TemplatePopup implements ModalComponent {
 					}, [
 						m("", {
 								style: {
-									marginTop: "-10px",
+									marginTop: "-12px",
 									flex: "1 0 auto",
 								},
 							}, m(TextFieldN, this._filterTextAttrs)
@@ -158,7 +170,7 @@ export class TemplatePopup implements ModalComponent {
 							this._selected = index === this._currentIndex
 							return m(".flex", {
 									onclick: (e) => {
-										this._onSubmit(this._searchResults[index].content)
+										this._onSubmit(this._searchResults[index].content["English"])
 										this._close()
 										e.stopPropagation()
 									},
@@ -178,8 +190,12 @@ export class TemplatePopup implements ModalComponent {
 					), // Template Text END
 				]),
 			m(".flex.flex-column", {style:{marginLeft: "7px"}} , [
-				m("", {style:{marginTop: "7px", fontSize: "18px", fontWeight: "bold", marginBottom: "5px"}} , this._searchResults[this._currentIndex].title),
-				m.trust(this._searchResults[this._currentIndex].content)
+				m("", {style: {marginTop: "-12px"}} ,[m(DropDownSelectorN, {
+					label: () => "Choose Language",
+					items: availableLanguages,
+					selectedValue: display
+				})]),
+				m("", {style:{overflow: "scroll", maxHeight: "302.2833px", width: "355px", overflowWrap: "break-word"}} , this._foundResults ? [m.trust(this._searchResults[this._currentIndex].content["English"])] : console.log("content empty"))
 			])
 			]
 		)
