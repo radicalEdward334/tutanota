@@ -8,7 +8,6 @@ import {HtmlEditor, Mode} from "../gui/base/HtmlEditor"
 import {formatNameAndAddress} from "../misc/Formatter"
 import {showProgressDialog} from "../gui/base/ProgressDialog"
 import {worker} from "../api/main/WorkerClient"
-import {Icons} from "../gui/base/icons/Icons"
 
 export type GiftCardOverviewAttrs = {
 	data: CreateGiftCardData,
@@ -17,7 +16,7 @@ export type GiftCardOverviewAttrs = {
 }
 
 
-export class GiftCardOverview implements MComponent<GiftCardOverviewAttrs> {
+export class CreateGiftCardOverview implements MComponent<GiftCardOverviewAttrs> {
 	_infoField: HtmlEditor
 
 	constructor(vnode: Vnode<GiftCardOverviewAttrs>) {

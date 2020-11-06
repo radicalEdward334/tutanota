@@ -2,16 +2,16 @@
 
 import type {WizardPageAttrs, WizardPageN} from "../gui/base/WizardDialogN"
 import m from "mithril"
-import {GiftCardSelector} from "./GiftCardSelector"
+import {CreateGiftCardSelector} from "./CreateGiftCardSelector"
 import type {CreateGiftCardData} from "./CreateGiftCardWizard"
-import {GiftCardOverview} from "./GiftCardOverview"
+import {CreateGiftCardOverview} from "./CreateGiftCardOverview"
 
 
 export class SelectGiftCardTypePage implements WizardPageN<CreateGiftCardData> {
 	view(vnode: Vnode<WizardPageAttrs<CreateGiftCardData>>): Children {
 		const a = vnode.attrs
 		return m("#upgrade-account-dialog.pt", [
-				m(GiftCardSelector, {
+				m(CreateGiftCardSelector, {
 					data: a.data,
 					boxWidth: 230,
 					boxHeight: 250,
@@ -29,7 +29,7 @@ export class GiftCardConfirmationPage implements WizardPageN<CreateGiftCardData>
 	view(vnode: Vnode<WizardPageAttrs<CreateGiftCardData>>): Children {
 		const a = vnode.attrs
 		return m("#upgrade-account-dialog.pt", [
-				m(GiftCardOverview, {
+				m(CreateGiftCardOverview, {
 					data: a.data,
 					boxWidth: 230,
 					boxHeight: 250,

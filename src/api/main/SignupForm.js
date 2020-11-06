@@ -91,45 +91,49 @@ export class SignupForm implements MComponent<SignupFormAttrs> {
 
 			ageConfirmPromise.then(confirmed => {
 				if (confirmed) {
-					return signup(
-						this._mailAddressForm.getCleanMailAddress(),
-						this._passwordForm.getNewPassword(),
-						this._code(),
-						a.isBusinessUse(),
-						a.isPaidSubscription(),
-						a.campaign()
-					).then(newAccountData => {
-						a.submitHandler(newAccountData)
+					// TODO uncomment this when no longer developing
+					// return signup(
+					// 	this._mailAddressForm.getCleanMailAddress(),
+					// 	this._passwordForm.getNewPassword(),
+					// 	this._code(),
+					// 	a.isBusinessUse(),
+					// 	a.isPaidSubscription(),
+					// 	a.campaign()
+					// ).then(newAccountData => {
+					// 	 a.submitHandler(newAccountData)
+					//  })
+					return a.submitHandler({
+						mailAddress: "dummy@tutanota.de",
+						recoverCode: "a15",
+						password: "1234"
 					})
 				}
 			})
 		}
 
 		return m("#signup-account-dialog.flex-center", m(".flex-grow-shrink-auto.max-width-m.pt.pb.plr-l", [
-			m("div",
-				a.readonly
-					? m(TextFieldN, {
-						label: "mailAddressNeutral_msg",
-						value: stream(a.prefilledMailAddress),
-						disabled: true
-					})
-					: [
-						m(this._mailAddressForm),
-						m(this._passwordForm),
-						(getWhitelabelRegistrationDomains().length > 0) ? m(TextFieldN, {
-							value: this._code,
-							label: "whitelabelRegistrationCode_label"
-						}) : null,
-						m(CheckboxN, confirmTermsCheckBoxAttrs),
-						m(CheckboxN, confirmAgeCheckBoxAttrs),
-						m(".mt-l.mb-l", m(ButtonN, {
-							label: "next_action",
-							click: submit,
-							type: ButtonType.Login,
-						})),
-					])
-			])
-		)
+			a.readonly
+				? m(TextFieldN, {
+					label: "mailAddressNeutral_msg",
+					value: stream(a.prefilledMailAddress),
+					disabled: true
+				})
+				: [
+					m(this._mailAddressForm),
+					m(this._passwordForm),
+					(getWhitelabelRegistrationDomains().length > 0) ? m(TextFieldN, {
+						value: this._code,
+						label: "whitelabelRegistrationCode_label"
+					}) : null,
+					m(CheckboxN, confirmTermsCheckBoxAttrs),
+					m(CheckboxN, confirmAgeCheckBoxAttrs),
+				],
+			m(".mt-l.mb-l", m(ButtonN, {
+				label: "next_action",
+				click: submit,
+				type: ButtonType.Login,
+			}))
+		]))
 	}
 }
 

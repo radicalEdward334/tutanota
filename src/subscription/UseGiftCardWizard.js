@@ -3,7 +3,7 @@
 import m from "mithril"
 import stream from "mithril/stream/stream.js"
 import type {GiftCard} from "./GiftCardUtils"
-import {giftCardDurationsInYears, ValueToGiftCardDuration} from "./GiftCardUtils"
+import {redeemGiftCard} from "./GiftCardUtils"
 import {neverNull, noOp} from "../api/common/utils/Utils"
 import type {WizardPageAttrs, WizardPageN} from "../gui/base/WizardDialogN"
 import {createWizardDialog, emitWizardEvent, WizardEventType} from "../gui/base/WizardDialogN"
@@ -29,6 +29,7 @@ type GiftCardRedeemData = {
 	password: Stream<string>,
 	credentialsMethod: GetCredentialsMethod,
 	newAccountData: Stream<?NewAccountData>,
+	giftCard: GiftCard
 }
 
 class GiftCardWelcomePage implements WizardPageN<GiftCardRedeemData> {
@@ -57,26 +58,32 @@ class GiftCardWelcomePage implements WizardPageN<GiftCardRedeemData> {
 }
 
 class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
+
+	_domElement: HTMLElement
+
+	oncreate(vnode: Vnode<WizardPageAttrs<GiftCardRedeemData>>) {
+		this._domElement = vnode.dom
+	}
+
 	view(vnode: Vnode<WizardPageAttrs<GiftCardRedeemData>>): Children {
-
 		const data = vnode.attrs.data
-
 		switch (data.credentialsMethod) {
 			case "login":
-				return this.renderLoginPage(data, vnode.dom)
+				return this._renderLoginPage(data)
 			case "signup":
-				return this.renderSignupPage(data, vnode.dom)
+				return this._renderSignupPage(data)
 		}
 	}
 
-	renderLoginPage(data: GiftCardRedeemData, dom: HTMLElement): Children {
+	_renderLoginPage(data: GiftCardRedeemData): Children {
 		const loginFormAttrs = {
 			onSubmit: (mailAddress, password) => {
 				const loginPromise =
 					logins.createSession(mailAddress, password, client.getIdentifier(), false, false)
-					      .then(_ => {
+					      .then(credentials => {
 						      console.log(logins.getUserController())
-						      emitWizardEvent(dom, WizardEventType.SHOWNEXTPAGE)
+						      // TODO if a business account or a nonGlobalAdmin then deny
+						      emitWizardEvent(this._domElement, WizardEventType.SHOWNEXTPAGE)
 					      })
 					      .catch(e => {
 						      // TODO Error handling
@@ -94,6 +101,8 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 			showProgressDialog("pleaseWait_msg", worker.initialized.then(() => {
 				logins.resumeSession(credentials).then(() => {
 					console.log(logins.getUserController())
+					emitWizardEvent(this._domElement, WizardEventType.SHOWNEXTPAGE)
+
 				}).catch(e => {
 					// TODO handle errors better?
 					Dialog.error("loginFailed_msg")
@@ -119,16 +128,19 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 		]
 	}
 
-	renderSignupPage(data: GiftCardRedeemData, dom: HTMLElement): Children {
+	_renderSignupPage(data: GiftCardRedeemData): Children {
 		const signupFormAttrs: SignupFormAttrs = {
 			submitHandler: newAccountData => {
 				console.log("new account data: ", newAccountData)
 				if (newAccountData) {
-					// TODO WHY DOES NOT THIS WORKING?
-					emitWizardEvent(dom, WizardEventType.SHOWNEXTPAGE)
+					data.newAccountData(newAccountData)
+				}
+				if (data.newAccountData()) {
+					emitWizardEvent(this._domElement, WizardEventType.SHOWNEXTPAGE)
 				}
 			},
-			readonly: false,
+			readonly: data.newAccountData() != null,
+			prefilledMailAddress: data.newAccountData() && neverNull(data.newAccountData()).mailAddress || undefined,
 			isBusinessUse: () => false,
 			isPaidSubscription: () => false,
 			campaign: () => null
@@ -140,20 +152,29 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 
 class RedeemGiftCardPage implements WizardPageN<GiftCardRedeemData> {
 	view(vnode: Vnode<WizardPageAttrs<GiftCardRedeemData>>): Children {
-		return "Implement Me"
+		const data = vnode.attrs.data
+
+		const confirmButtonAttrs = {
+			label: () => "Redeem gift card", // TODO translate
+			click: () => {
+				redeemGiftCard(data.giftCard, logins.getUserController().user)
+			}
+		}
+
+		return m(ButtonN, confirmButtonAttrs)
 	}
 }
 
 
 export function loadUseGiftCardWizard(giftCard: GiftCard): Promise<Dialog> {
-	const years = neverNull(giftCardDurationsInYears.get(ValueToGiftCardDuration[giftCard.duration]))
 	return loadUpgradePrices().then(prices => {
 
 		const giftCardRedeemData: GiftCardRedeemData = {
 			newAccountData: stream(null),
 			mailAddress: stream(""),
 			password: stream(""),
-			credentialsMethod: "signup"
+			credentialsMethod: "signup",
+			giftCard: giftCard
 		}
 
 
@@ -171,7 +192,7 @@ export function loadUseGiftCardWizard(giftCard: GiftCard): Promise<Dialog> {
 			{
 				attrs: {
 					data: giftCardRedeemData,
-					headerTitle: () => giftCardRedeemData.credentialsMethod === "signup" ? "Create account" : "Select account",
+					headerTitle: () => giftCardRedeemData.credentialsMethod === "signup" ? "Create account" : "Select account", // TODO translate
 					nextAction: (showErrorDialog: boolean) => Promise.resolve(true),
 					isSkipAvailable: () => false,
 					isEnabled: () => true
@@ -181,7 +202,7 @@ export function loadUseGiftCardWizard(giftCard: GiftCard): Promise<Dialog> {
 			{
 				attrs: {
 					data: giftCardRedeemData,
-					headerTitle: () => "Confirm",
+					headerTitle: () => "Confirm", // TODO translate
 					nextAction: (_) => Promise.resolve(true),
 					isSkipAvailable: () => false,
 					isEnabled: () => true

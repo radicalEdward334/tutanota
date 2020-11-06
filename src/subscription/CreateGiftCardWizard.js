@@ -12,7 +12,7 @@ import type {PlanPrices} from "../api/entities/sys/PlanPrices"
 import type {SubscriptionOptions, SubscriptionTypeEnum} from "./SubscriptionUtils"
 import {createPlanPrices} from "../api/entities/sys/PlanPrices"
 import {loadUpgradePrices} from "./UpgradeSubscriptionWizard"
-import {GiftCardConfirmationPage, GiftCardPresentationPage, SelectGiftCardTypePage} from "./GiftCardWizardPages"
+import {GiftCardConfirmationPage, GiftCardPresentationPage, SelectGiftCardTypePage} from "./CreateGiftCardWizardPages"
 import {load} from "../api/main/Entity"
 import {CustomerTypeRef} from "../api/entities/sys/Customer"
 import {neverNull} from "../api/common/utils/Utils"
@@ -21,13 +21,11 @@ import {CustomerInfoTypeRef} from "../api/entities/sys/CustomerInfo"
 import {AccountingInfoTypeRef} from "../api/entities/sys/AccountingInfo"
 import type {AccountingInfo} from "../api/entities/sys/AccountingInfo"
 import type {UpgradePriceServiceReturn} from "../api/entities/sys/UpgradePriceServiceReturn"
-import type {GiftCardDurationEnum} from "./GiftCardUtils"
-import {GiftCardDuration} from "./GiftCardUtils"
+import type {GiftCardPackageEnum} from "./GiftCardUtils"
+import {GiftCardPackage} from "./GiftCardUtils"
 
 export type CreateGiftCardData = {|
-	options: SubscriptionOptions,
-	premiumPrices: PlanPrices;
-	giftCardLength: GiftCardDurationEnum;
+	package: GiftCardPackageEnum;
 
 	invoiceAddress: string;
 	invoiceCountry: string;
@@ -36,6 +34,7 @@ export type CreateGiftCardData = {|
 |}
 
 
+// TODO maybe this is already written somewhere else?
 function loadAccountingInfo(): Promise<AccountingInfo> {
 	const info = load(CustomerTypeRef, neverNull(logins.getUserController().user.customer))
 		.then(customer => load(CustomerInfoTypeRef, customer.customerInfo))
@@ -48,13 +47,7 @@ export function showPurchaseGiftCardWizard(): Promise<Dialog> {
 	return loadUpgradePrices().then(prices => {
 		return loadAccountingInfo().then((accountingInfo: AccountingInfo) => {
 			const data: CreateGiftCardData = {
-				options: {
-					businessUse: stream(false),
-					paymentInterval: stream(1)
-				},
-				premiumPrices: prices.premiumPrices,
-				giftCardLength: GiftCardDuration.OneYear,
-
+				package: GiftCardPackage.Silver,
 				invoiceAddress: accountingInfo.invoiceAddress,
 				invoiceCountry: accountingInfo.invoiceCountry || "",
 				invoiceName: accountingInfo.invoiceName,
