@@ -63,7 +63,8 @@ import {ColumnWidth, TableN} from "../gui/base/TableN"
 import type {TableAttrs, TableLineAttrs} from "../gui/base/TableN"
 import type {ButtonAttrs} from "../gui/base/ButtonN"
 import {BootIcons} from "../gui/base/icons/BootIcons"
-import {showPurchaseGiftCardWizard} from "./CreateGiftCardWizard"
+import {showGiftCardPresentationDialog, showPurchaseGiftCardWizard} from "./CreateGiftCardWizard"
+import type {GiftCard} from "./GiftCardUtils"
 
 assertMainOrNode()
 
@@ -219,7 +220,11 @@ export class SubscriptionViewer implements UpdatableSettingsViewer {
 
 		const purchaseGiftCardButtonAttrs: ButtonAttrs = {
 			label: () => "Purchase a gift card",
-			click: () => showPurchaseGiftCardWizard(),
+			click: () => showPurchaseGiftCardWizard().then(
+				(giftCard: ?GiftCard) => {
+					if (giftCard) showGiftCardPresentationDialog(giftCard)
+				}
+			),
 			icon: () => Icons.Add
 		}
 

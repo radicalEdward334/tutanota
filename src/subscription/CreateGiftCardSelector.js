@@ -5,17 +5,14 @@ import type {BuyOptionBoxAttr} from "./BuyOptionBox"
 import {BuyOptionBox} from "./BuyOptionBox"
 import {ButtonN, ButtonType} from "../gui/base/ButtonN"
 import {formatPrice} from "./SubscriptionUtils"
-import {emitWizardEvent, WizardEventType} from "../gui/base/WizardDialogN"
-import type {CreateGiftCardData} from "./CreateGiftCardWizard"
 import type {GiftCardPackageEnum} from "./GiftCardUtils"
 import {getGiftCardPrice, GiftCardPackage, giftCardSelectorLabels} from "./GiftCardUtils"
 import {neverNull} from "../api/common/utils/Utils"
 
 export type GiftCardSelectorAttrs = {
-	data: CreateGiftCardData,
+	selectedPackage: Stream<GiftCardPackageEnum>,
 	boxWidth: number,
 	boxHeight: number,
-	wizardDom: lazy<HTMLElement>;
 }
 
 export class CreateGiftCardSelector implements MComponent<GiftCardSelectorAttrs> {
@@ -38,17 +35,18 @@ export class CreateGiftCardSelector implements MComponent<GiftCardSelectorAttrs>
 	}
 }
 
-function createPremiumGiftCardBoxAttr(attrs: GiftCardSelectorAttrs, gitfCardPackage: GiftCardPackageEnum): BuyOptionBoxAttr {
+function createPremiumGiftCardBoxAttr(attrs: GiftCardSelectorAttrs, giftCardPackage: GiftCardPackageEnum): BuyOptionBoxAttr {
 
-	const price = formatPrice(getGiftCardPrice(gitfCardPackage), true)
+	const price = formatPrice(getGiftCardPrice(giftCardPackage), true)
+	const highlighted = giftCardPackage === attrs.selectedPackage()
 	return {
-		heading: neverNull(giftCardSelectorLabels.get(gitfCardPackage)),
+		heading: neverNull(giftCardSelectorLabels.get(giftCardPackage)),
 		actionButton: {
 			view: () => m(ButtonN, {
 				label: "pricing.select_action",
 				click: () => {
-					attrs.data.package = gitfCardPackage
-					emitWizardEvent(attrs.wizardDom(), WizardEventType.SHOWNEXTPAGE)
+					attrs.selectedPackage(giftCardPackage)
+					console.log(giftCardPackage, "highlighted", highlighted)
 				},
 				type: ButtonType.Login,
 			})
@@ -60,7 +58,7 @@ function createPremiumGiftCardBoxAttr(attrs: GiftCardSelectorAttrs, gitfCardPack
 		width: attrs.boxWidth,
 		height: attrs.boxHeight,
 		paymentInterval: null,
-		highlighted: gitfCardPackage === GiftCardPackage.Gold,
+		highlighted: highlighted,
 		showReferenceDiscount: false,
 	}
 }

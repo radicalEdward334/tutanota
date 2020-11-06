@@ -3,7 +3,6 @@
 
 import {reverse} from "../api/common/TutanotaConstants"
 import type {User} from "../api/entities/sys/User"
-import {createUser} from "../api/entities/sys/User"
 import {neverNull} from "../api/common/utils/Utils"
 
 export const GiftCardPackage =
@@ -17,8 +16,6 @@ export const GiftCardPackage =
 export function createGiftCard(id: Id): GiftCard {
 	return {
 		_id: id,
-		giver: createUser(),
-		receiver: null,
 		package: "0",
 		message: "You go a gift card",
 		linkId: id,
@@ -30,8 +27,6 @@ export function createGiftCard(id: Id): GiftCard {
 export type GiftCard = {
 	_id: Id,
 
-	giver: User,
-	receiver: ?User,
 	package: NumberString,
 	message: string,
 	linkId: string,
@@ -39,9 +34,7 @@ export type GiftCard = {
 	redeemed: ?Date
 }
 
-
 export type GiftCardPackageEnum = $Values<typeof GiftCardPackage>
-export const ValueToGiftCardPackage: {} = reverse(GiftCardPackage)
 
 export const giftCardSelectorLabels: $ReadOnlyMap<GiftCardPackageEnum, string> = new Map([
 	[GiftCardPackage.Silver, "Silver"],
@@ -70,7 +63,15 @@ export function loadGiftCardFromHash(hash: string): Promise<?GiftCard> {
 		return Promise.resolve(null)
 	}
 
-	return Promise.resolve(createGiftCard(id))
+	// TODO return locator.entityClient.load(GiftCardTypeRef, id)
+	return Promise.resolve({
+		_id: id,
+		package: "0",
+		message: "You got a gift card",
+		linkId: id,
+		purchased: new Date(),
+		redeemed: null
+	})
 }
 
 export function redeemGiftCard(giftCard: GiftCard, user: User) {

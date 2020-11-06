@@ -32,8 +32,11 @@ type GiftCardRedeemData = {
 	giftCard: GiftCard
 }
 
+type GiftCardRedeemAttrs = WizardPageAttrs<GiftCardRedeemData>
+
 class GiftCardWelcomePage implements WizardPageN<GiftCardRedeemData> {
-	view(vnode: Vnode<WizardPageAttrs<GiftCardRedeemData>>): Children {
+
+	view(vnode: Vnode<GiftCardRedeemAttrs>): Children {
 		const a = vnode.attrs
 
 		const nextPage = (method: GetCredentialsMethod) => {
@@ -42,12 +45,12 @@ class GiftCardWelcomePage implements WizardPageN<GiftCardRedeemData> {
 		}
 
 		return m(".flex-v-center", [
+			m("", a.data.giftCard.message),
 			m(ButtonN, {
 				label: () => "Use existing account",
 				click: () => nextPage("login"),
 				type: ButtonType.Login
 			}),
-			m(".flex-space-between.mt-l", [m(".hr"), "or", m(".hr")]),
 			m(ButtonN, {
 				label: () => "Create account",
 				click: () => nextPage("signup"),
@@ -61,11 +64,11 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 
 	_domElement: HTMLElement
 
-	oncreate(vnode: Vnode<WizardPageAttrs<GiftCardRedeemData>>) {
+	oncreate(vnode: Vnode<GiftCardRedeemAttrs>) {
 		this._domElement = vnode.dom
 	}
 
-	view(vnode: Vnode<WizardPageAttrs<GiftCardRedeemData>>): Children {
+	view(vnode: Vnode<GiftCardRedeemAttrs>): Children {
 		const data = vnode.attrs.data
 		switch (data.credentialsMethod) {
 			case "login":
@@ -151,11 +154,11 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 }
 
 class RedeemGiftCardPage implements WizardPageN<GiftCardRedeemData> {
-	view(vnode: Vnode<WizardPageAttrs<GiftCardRedeemData>>): Children {
+	view(vnode: Vnode<GiftCardRedeemAttrs>): Children {
 		const data = vnode.attrs.data
 
 		const confirmButtonAttrs = {
-			label: () => "Redeem gift card", // TODO translate
+			label: () => "Redeem gift card", // Translate
 			click: () => {
 				redeemGiftCard(data.giftCard, logins.getUserController().user)
 			}
@@ -192,7 +195,7 @@ export function loadUseGiftCardWizard(giftCard: GiftCard): Promise<Dialog> {
 			{
 				attrs: {
 					data: giftCardRedeemData,
-					headerTitle: () => giftCardRedeemData.credentialsMethod === "signup" ? "Create account" : "Select account", // TODO translate
+					headerTitle: () => giftCardRedeemData.credentialsMethod === "signup" ? "Create account" : "Select account", // Translate
 					nextAction: (showErrorDialog: boolean) => Promise.resolve(true),
 					isSkipAvailable: () => false,
 					isEnabled: () => true
@@ -202,7 +205,7 @@ export function loadUseGiftCardWizard(giftCard: GiftCard): Promise<Dialog> {
 			{
 				attrs: {
 					data: giftCardRedeemData,
-					headerTitle: () => "Confirm", // TODO translate
+					headerTitle: () => "Confirm", // Translate
 					nextAction: (_) => Promise.resolve(true),
 					isSkipAvailable: () => false,
 					isEnabled: () => true

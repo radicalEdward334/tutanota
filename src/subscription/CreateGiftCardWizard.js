@@ -1,37 +1,32 @@
 // @flow
 
 import m from "mithril"
-import stream from "mithril/stream/stream.js"
-import type {Dialog} from "../gui/base/Dialog"
-import type {WizardPageAttrs, WizardPageN} from "../gui/base/WizardDialogN"
-import {createWizardDialog, emitWizardEvent, WizardEventType} from "../gui/base/WizardDialogN"
-import {SubscriptionSelector} from "./SubscriptionSelector"
-import {getUpgradePrice, SubscriptionType, UpgradePriceType, UpgradeType} from "./SubscriptionUtils"
-import {ButtonN, ButtonType} from "../gui/base/ButtonN"
-import type {PlanPrices} from "../api/entities/sys/PlanPrices"
-import type {SubscriptionOptions, SubscriptionTypeEnum} from "./SubscriptionUtils"
-import {createPlanPrices} from "../api/entities/sys/PlanPrices"
+import {Dialog, DialogType} from "../gui/base/Dialog"
+import {createWizardDialog} from "../gui/base/WizardDialogN"
 import {loadUpgradePrices} from "./UpgradeSubscriptionWizard"
-import {GiftCardConfirmationPage, GiftCardPresentationPage, SelectGiftCardTypePage} from "./CreateGiftCardWizardPages"
+import {GiftCardConfirmationPage, GiftCardCreationPage} from "./CreateGiftCardWizardPages"
 import {load} from "../api/main/Entity"
 import {CustomerTypeRef} from "../api/entities/sys/Customer"
 import {neverNull} from "../api/common/utils/Utils"
 import {logins} from "../api/main/LoginController"
 import {CustomerInfoTypeRef} from "../api/entities/sys/CustomerInfo"
-import {AccountingInfoTypeRef} from "../api/entities/sys/AccountingInfo"
 import type {AccountingInfo} from "../api/entities/sys/AccountingInfo"
-import type {UpgradePriceServiceReturn} from "../api/entities/sys/UpgradePriceServiceReturn"
-import type {GiftCardPackageEnum} from "./GiftCardUtils"
+import {AccountingInfoTypeRef} from "../api/entities/sys/AccountingInfo"
+import type {GiftCard, GiftCardPackageEnum} from "./GiftCardUtils"
 import {GiftCardPackage} from "./GiftCardUtils"
+import {worker} from "../api/main/WorkerClient"
+import {showProgressDialog} from "../gui/base/ProgressDialog"
 
-export type CreateGiftCardData = {|
+export type CreateGiftCardData = {
 	package: GiftCardPackageEnum;
+	message: string;
+	giftCard: ?GiftCard,
 
 	invoiceAddress: string;
 	invoiceCountry: string;
 	invoiceName: string;
 	paymentMethod: ?NumberString;
-|}
+}
 
 
 // TODO maybe this is already written somewhere else?
@@ -43,11 +38,13 @@ function loadAccountingInfo(): Promise<AccountingInfo> {
 	return info
 }
 
-export function showPurchaseGiftCardWizard(): Promise<Dialog> {
+export function showPurchaseGiftCardWizard(): Promise<?GiftCard> {
 	return loadUpgradePrices().then(prices => {
 		return loadAccountingInfo().then((accountingInfo: AccountingInfo) => {
 			const data: CreateGiftCardData = {
-				package: GiftCardPackage.Silver,
+				package: GiftCardPackage.Gold,
+				message: "Hey, I bought you a gift card!<br />LG,<br />{name}", // Translate defaultGiftCardMessage_msg
+				giftCard: null,
 				invoiceAddress: accountingInfo.invoiceAddress,
 				invoiceCountry: accountingInfo.invoiceCountry || "",
 				invoiceName: accountingInfo.invoiceName,
@@ -58,65 +55,76 @@ export function showPurchaseGiftCardWizard(): Promise<Dialog> {
 				{
 					attrs: {
 						data: data,
-						headerTitle(): string {
-							return "Select Type"
-						},
-						nextAction(showErrorDialog: boolean): Promise<boolean> {
-							// next action not available for this page
-							return Promise.resolve(true)
-						},
-						isSkipAvailable(): boolean {
-							return false
-						},
-						isEnabled(): boolean {
-							return true
-						}
+						headerTitle: () => "Select type", // Translate
+						nextAction: (showErrorDialog: boolean) => Promise.resolve(true),
+						isSkipAvailable: () => false,
+						isEnabled: () => true,
 					},
-					componentClass: SelectGiftCardTypePage
+					componentClass: GiftCardCreationPage
 				},
 				{
 					attrs: {
 						data: data,
-						headerTitle(): string {
-							return "Confirm Gift Card"
+						headerTitle: () => "Confirm gift card", // Translate
+						nextAction: (_) => {
+							return showProgressDialog("loading_msg",
+								worker.generateGiftCard(data.message, data.package)
+								      .then(giftCard => {
+									      data.giftCard = giftCard
+									      return giftCard
+										      ? Promise.resolve(true)
+										      : Dialog.error(() => "Error").then(() => false)
+								      }))
 						},
-						nextAction(showErrorDialog: boolean): Promise<boolean> {
-							// next action not available for this page
-							return Promise.resolve(true)
-						},
-						isSkipAvailable(): boolean {
-							return false
-						},
-						isEnabled(): boolean {
-							return true
-						}
+						isSkipAvailable: () => false,
+						isEnabled: () => true
 					},
 					componentClass: GiftCardConfirmationPage
 				},
-				{
-					attrs: {
-						data: data,
-						headerTitle(): string {
-							return "Your Gift Card"
-						},
-						nextAction(showErrorDialog: boolean): Promise<boolean> {
-							// next action not available for this page
-							return Promise.resolve(true)
-						},
-						isSkipAvailable(): boolean {
-							return false
-						},
-						isEnabled(): boolean {
-							return true
-						}
-					},
-					componentClass: GiftCardPresentationPage
-				}
+				// {
+				// 	attrs: {
+				// 		data: data,
+				// 		headerTitle: () => "Your gift card", // Translate
+				// 		nextAction: (_) => Promise.resolve(true),
+				// 		isSkipAvailable: () => false,
+				// 		isEnabled: () => true,
+				// 	},
+				// 	componentClass: GiftCardPresentationPage
+				// }
 			]
 
-			return createWizardDialog(data, wizardPages, () => {
+			const wizardBuilder = createWizardDialog(data, wizardPages, () => {
 				return Promise.resolve()
-			}).dialog.show()
+			})
+
+			wizardBuilder.dialog.show()
+			return wizardBuilder.promise.then(() => data.giftCard)
 		})
+	})
+}
+
+// TODO
+class GiftCardPresentation implements MComponent<GiftCard> {
+	view(vnode: Vnode<GiftCard>): Children {
+		const giftCard = vnode.attrs
+		return m(".present-giftcard-page.pt", [
+			m("span", {
+				style: {
+					// fontSize: "0.5rem"
+				}
+			}, JSON.stringify(giftCard, null, 4))
+		])
+	}
+}
+
+export function showGiftCardPresentationDialog(giftCard: GiftCard): void {
+	let dialog
+	dialog = Dialog.showActionDialog({
+		title: () => "A gift card that you did make", // Translate
+		child: () => m(GiftCardPresentation, giftCard),
+		okAction: null,
+		allowCancel: false,
+		okAction: () => { dialog.close() },
+		type: DialogType.EditLarger
 	})
 }

@@ -38,13 +38,9 @@ export function getActiveSubscriptionActionButtonReplacement(): {|view: () => Vn
 
 export const BOX_MARGIN = 10
 
-class _BuyOptionBox {
+export class BuyOptionBox implements MComponent<BuyOptionBoxAttr> {
 
-	constructor() {
-
-	}
-
-	view(vnode: Vnode<BuyOptionBoxAttr>) {
+	view(vnode: Vnode<BuyOptionBoxAttr>): Children {
 
 		return m("", {
 			style: {
@@ -119,14 +115,4 @@ class _BuyOptionBox {
 		])
 	}
 }
-
-export const BuyOptionBox: Class<MComponent<BuyOptionBoxAttr>> = _BuyOptionBox
-
-
-
-
-
-
-
-
 

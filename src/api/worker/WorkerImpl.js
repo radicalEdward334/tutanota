@@ -339,8 +339,18 @@ export class WorkerImpl {
 			getEventByUid: (message: Request) => {
 				return locator.calendar.getEventByUid(...message.args)
 			},
+
 			generateGiftCard: (message: Request) => {
-				return Promise.resolve() // TODO generate a gift card
+				const id = new Date().getDate().toString()
+				return Promise.resolve(
+					{
+						_id: id,
+						message: message.args[0],
+						package: message.args[1],
+						linkId: id,
+						purchased: new Date(),
+						redeemed: null
+					}) // TODO generate a gift card on server
 			}
 		})
 
