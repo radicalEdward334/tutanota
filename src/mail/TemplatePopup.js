@@ -18,6 +18,7 @@ import {Icon} from "../gui/base/Icon"
 import {debounce} from "../api/common/utils/Utils"
 import {DropDownSelectorN} from "../gui/base/DropDownSelectorN"
 import {DropDownSelector} from "../gui/base/DropDownSelector"
+import type {SelectorItemList} from "../gui/base/DropDownSelectorN"
 
 
 export class TemplatePopup implements ModalComponent {
@@ -98,11 +99,19 @@ export class TemplatePopup implements ModalComponent {
 
 	view: () => Children = () => {
 
-		let availableLanguages = Object.keys(this._searchResults[this._currentIndex].content).map(language => {
-			console.log("Keys: ", Object.keys(this._searchResults[this._currentIndex].content), "available Languages: ", availableLanguages)
-			return {name: language, value: language}
-		})
-		let display = stream(availableLanguages[0].value)
+		let temp = []
+		let display = stream("")
+		let availableLanguages = []
+		if (this._foundResults) {
+			temp = Object.keys(this._searchResults[this._currentIndex].content)
+			availableLanguages = temp.map(language => {
+				return {
+					name: language,
+					value: language
+				}
+			})
+			display = stream(availableLanguages[0].value)
+		}
 
 		return m(".flex.abs.elevated-bg.plr.border-radius.dropdown-shadow", { // Main Wrapper
 				style: {
@@ -190,11 +199,12 @@ export class TemplatePopup implements ModalComponent {
 					), // Template Text END
 				]),
 			m(".flex.flex-column", {style:{marginLeft: "7px"}} , [
-				m("", {style: {marginTop: "-12px"}} ,[m(DropDownSelectorN, {
+				this._foundResults ? m("", {style: {marginTop: "-12px"}} ,[m(DropDownSelectorN, {
 					label: () => "Choose Language",
 					items: availableLanguages,
-					selectedValue: display
-				})]),
+					selectedValue: display,
+					dropdownWidth: 250
+				})]) : null,
 				m("", {style:{overflow: "scroll", maxHeight: "302.2833px", width: "355px", overflowWrap: "break-word"}} , this._foundResults ? [m.trust(this._searchResults[this._currentIndex].content["English"])] : console.log("content empty"))
 			])
 			]
@@ -237,7 +247,7 @@ export class TemplatePopup implements ModalComponent {
 	}
 
 	show() {
-		modal.displayUnique(this, false)
+		modal.display(this, false)
 	}
 
 	_close(): void {

@@ -3,7 +3,7 @@
 import m from "mithril"
 import stream from "mithril/stream/stream.js"
 import {HtmlEditor} from "../gui/base/HtmlEditor"
-import {neverNull} from "../api/common/utils/Utils"
+import {neverNull, typedEntries} from "../api/common/utils/Utils"
 import type {TextFieldAttrs} from "../gui/base/TextFieldN"
 import {TextFieldN} from "../gui/base/TextFieldN"
 import type {EntityEventsListener, EntityUpdateData} from "../api/main/EventController"
@@ -80,6 +80,10 @@ export class TemplateDetailsViewer {
 					m(TextFieldN, titleAttrs),
 					m(TextFieldN, idAttrs),
 
+					typedEntries(template.content).map(([language, content]) => m(".flex.flex-column", [
+						m("", {style: {fontSize: "20px", fontWeight: "bold" }}, language),
+						m("", m.trust(content))
+					]))
 				])
 			])
 		}
