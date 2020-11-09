@@ -17,8 +17,6 @@ import {Icons} from "../gui/base/icons/Icons"
 import {Icon} from "../gui/base/Icon"
 import {debounce} from "../api/common/utils/Utils"
 import {DropDownSelectorN} from "../gui/base/DropDownSelectorN"
-import {DropDownSelector} from "../gui/base/DropDownSelector"
-import type {SelectorItemList} from "../gui/base/DropDownSelectorN"
 
 
 export class TemplatePopup implements ModalComponent {
@@ -39,6 +37,8 @@ export class TemplatePopup implements ModalComponent {
 	_height: string
 	_currentIndex: number = 0
 
+	_selectedLanguage: Stream<string>
+	_availableLanguages: Array<Object>
 
 	constructor(rect: PosRect, onSubmit: (string) => void) {
 		this._height = "270px"
@@ -48,6 +48,8 @@ export class TemplatePopup implements ModalComponent {
 		this._setProperties()
 		this._rect = rect
 		this._onSubmit = onSubmit
+		this._loadLanguages()
+		this._selectedLanguage = stream(this._availableLanguages[0].value)
 		this._filterTextAttrs = {
 			label: () => "Filter... (# to search for id's)",
 			value: stream(""),
@@ -82,7 +84,7 @@ export class TemplatePopup implements ModalComponent {
 				enabled: () => true,
 				exec: () => {
 					console.log(this._searchResults[this._currentIndex].content)
-					var text = this._searchResults[this._currentIndex].content["English"]
+					var text = this._searchResults[this._currentIndex].content[this._selectedLanguage()]
 					console.log(text)
 					this._onSubmit(text)
 					this._close()
@@ -99,19 +101,13 @@ export class TemplatePopup implements ModalComponent {
 
 	view: () => Children = () => {
 
-		let temp = []
-		let display = stream("")
-		let availableLanguages = []
-		if (this._foundResults) {
-			temp = Object.keys(this._searchResults[this._currentIndex].content)
-			availableLanguages = temp.map(language => {
-				return {
-					name: language,
-					value: language
-				}
-			})
-			display = stream(availableLanguages[0].value)
-		}
+		this._loadLanguages()
+		//Sort
+		this._availableLanguages.sort(function (a, b) {
+			var textA = a.name.toUpperCase();
+			var textB = b.name.toUpperCase();
+			return (textA < textB) ? -1 : (textA > textB) ? 1 : 0
+		})
 
 		return m(".flex.abs.elevated-bg.plr.border-radius.dropdown-shadow", { // Main Wrapper
 				style: {
@@ -179,7 +175,7 @@ export class TemplatePopup implements ModalComponent {
 							this._selected = index === this._currentIndex
 							return m(".flex", {
 									onclick: (e) => {
-										this._onSubmit(this._searchResults[index].content["English"])
+										this._onSubmit(this._searchResults[index].content[this._selectedLanguage()])
 										this._close()
 										e.stopPropagation()
 									},
@@ -198,15 +194,18 @@ export class TemplatePopup implements ModalComponent {
 						: m(".row-selected", {style: {marginTop: "10px", textAlign: "center"}}, "Nothing found")
 					), // Template Text END
 				]),
-			m(".flex.flex-column", {style:{marginLeft: "7px"}} , [
-				this._foundResults ? m("", {style: {marginTop: "-12px"}} ,[m(DropDownSelectorN, {
-					label: () => "Choose Language",
-					items: availableLanguages,
-					selectedValue: display,
-					dropdownWidth: 250
-				})]) : null,
-				m("", {style:{overflow: "scroll", maxHeight: "302.2833px", width: "355px", overflowWrap: "break-word"}} , this._foundResults ? [m.trust(this._searchResults[this._currentIndex].content["English"])] : console.log("content empty"))
-			])
+				m(".flex.flex-column", {style: {marginLeft: "7px"}}, [
+					this._foundResults ? m("", {style: {marginTop: "-12px"}}, [
+						m(DropDownSelectorN, {
+							label: () => "Choose Language",
+							items: this._availableLanguages,
+							selectedValue: this._selectedLanguage,
+							dropdownWidth: 250,
+						})
+					]) : null,
+					m("", {style: {overflow: "scroll", maxHeight: "302.2833px", width: "355px", overflowWrap: "break-word"}},
+						this._foundResults ? [m.trust(this._searchResults[this._currentIndex].content[this._selectedLanguage()])] : console.log("content empty"))
+				])
 			]
 		)
 	}
@@ -246,6 +245,19 @@ export class TemplatePopup implements ModalComponent {
 		}
 	}
 
+	_loadLanguages() {
+		let temp = []
+		if (this._foundResults) {
+			temp = Object.keys(this._searchResults[this._currentIndex].content)
+			this._availableLanguages = temp.map(language => {
+				return {
+					name: language,
+					value: language
+				}
+			})
+		}
+	}
+
 	show() {
 		modal.display(this, false)
 	}
@@ -256,6 +268,7 @@ export class TemplatePopup implements ModalComponent {
 
 	backgroundClick(e: MouseEvent): void {
 		this._close()
+		// console.log(e.target)
 	}
 
 	hideAnimation(): Promise<void> {

@@ -94,6 +94,11 @@ export class TemplateEditor {
 				let toSortLanguages = this._allLanguages.map((language) => {
 					return {name: language, value: language}
 				})
+				toSortLanguages.sort(function(a, b) { // Sort
+					var textA = a.name.toUpperCase();
+					var textB = b.name.toUpperCase();
+					return (textA < textB) ? -1 : (textA > textB) ? 1 : 0
+				})
 				let j
 				for (j = 0; j < this._addedLanguages.length; j++) {
 					let k
@@ -212,3 +217,4 @@ export class TemplateEditor {
 		this._dialog.show()
 	}
 }
+
