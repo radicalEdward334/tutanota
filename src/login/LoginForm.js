@@ -43,7 +43,7 @@ export class LoginForm implements MComponent<LoginFormAttrs> {
 			onsubmit: (e) => {
 				// do not post the form, the form is just here to enable browser auto-fill
 				e.preventDefault()
-				a.onSubmit(a.mailAddress(), a.password())
+				// a.onSubmit(a.mailAddress(), a.password())
 			},
 		}, [
 			m(TextFieldN, mailAddressFieldAttrs),

@@ -351,6 +351,11 @@ export class WorkerImpl {
 						purchased: new Date(),
 						redeemed: null
 					}) // TODO generate a gift card on server
+			},
+
+			redeemGiftCard: (message: Request) => {
+				const [userId, giftCardId] = message.args
+				return Promise.resolve(giftCardId !== 'used') // TODO contact server to redeem
 			}
 		})
 

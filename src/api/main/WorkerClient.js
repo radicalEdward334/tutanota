@@ -592,6 +592,11 @@ export class WorkerClient implements EntityRestInterface {
 	}
 
 	//TODO redeemGiftCard(userId, giftCardId)
+	redeemGiftCard(userId: Id, giftCardId: Id): Promise<boolean> {
+		return this._queue.postMessage(new Request("redeemGiftCard", [userId, giftCardId]))
+		           .tap(success => console.log(success ? "Successfully" : "Unsuccessfully", "redeemed gift card:", giftCardId, "for user", userId))
+
+	}
 }
 
 export const worker: WorkerClient = new WorkerClient()

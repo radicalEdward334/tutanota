@@ -10,7 +10,7 @@ import {createWizardDialog, emitWizardEvent, WizardEventType} from "../gui/base/
 import {logins} from "../api/main/LoginController"
 import type {NewAccountData} from "./UpgradeSubscriptionWizard"
 import {loadUpgradePrices} from "./UpgradeSubscriptionWizard"
-import {Dialog} from "../gui/base/Dialog"
+import {Dialog, DialogType} from "../gui/base/Dialog"
 import {LoginForm} from "../login/LoginForm"
 import type {CredentialsSelectorAttrs} from "../login/CredentialsSelector"
 import {CredentialsSelector} from "../login/CredentialsSelector"
@@ -27,9 +27,11 @@ type GetCredentialsMethod = "login" | "signup"
 type GiftCardRedeemData = {
 	mailAddress: Stream<string>,
 	password: Stream<string>,
+	giftCard: GiftCard,
+
 	credentialsMethod: GetCredentialsMethod,
-	newAccountData: Stream<?NewAccountData>,
-	giftCard: GiftCard
+	credentials: Stream<?Credentials>,
+	newAccountData: Stream<?NewAccountData>
 }
 
 type GiftCardRedeemAttrs = WizardPageAttrs<GiftCardRedeemData>
@@ -40,8 +42,10 @@ class GiftCardWelcomePage implements WizardPageN<GiftCardRedeemData> {
 		const a = vnode.attrs
 
 		const nextPage = (method: GetCredentialsMethod) => {
-			a.data.credentialsMethod = method
-			emitWizardEvent(vnode.dom, WizardEventType.SHOWNEXTPAGE)
+			logins.logout(false).then(() => {
+				a.data.credentialsMethod = method
+				emitWizardEvent(vnode.dom, WizardEventType.SHOWNEXTPAGE)
+			})
 		}
 
 		return m(".flex-v-center", [
@@ -81,14 +85,18 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 	_renderLoginPage(data: GiftCardRedeemData): Children {
 		const loginFormAttrs = {
 			onSubmit: (mailAddress, password) => {
+				console.log("login selected", mailAddress, password)
 				const loginPromise =
-					logins.createSession(mailAddress, password, client.getIdentifier(), false, false)
+					logins.logout(false)
+					      .then(() => logins.createSession(mailAddress, password, client.getIdentifier(), false, false))
 					      .then(credentials => {
+						      data.credentials(credentials)
 						      console.log(logins.getUserController())
 						      // TODO if a business account or a nonGlobalAdmin then deny
 						      emitWizardEvent(this._domElement, WizardEventType.SHOWNEXTPAGE)
 					      })
 					      .catch(e => {
+						      console.log("Error on login submit", e)
 						      // TODO Error handling
 						      Dialog.error(() => "Error logging in")
 					      })
@@ -101,12 +109,16 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 
 		const credentials = deviceConfig.getAllInternal()
 		const onCredentialsSelected = credentials => {
+			console.log("credentials selected", credentials)
 			showProgressDialog("pleaseWait_msg", worker.initialized.then(() => {
-				logins.resumeSession(credentials).then(() => {
-					console.log(logins.getUserController())
-					emitWizardEvent(this._domElement, WizardEventType.SHOWNEXTPAGE)
+				logins.logout(false)
+				      .then(() => logins.resumeSession(credentials))
+				      .then(() => {
+					      console.log(logins.getUserController())
+					      data.credentials(credentials)
+					      emitWizardEvent(this._domElement, WizardEventType.SHOWNEXTPAGE)
 
-				}).catch(e => {
+				      }).catch(e => {
 					// TODO handle errors better?
 					Dialog.error("loginFailed_msg")
 				})
@@ -132,18 +144,28 @@ class GiftCardCredentialsPage implements WizardPageN<GiftCardRedeemData> {
 	}
 
 	_renderSignupPage(data: GiftCardRedeemData): Children {
+		const existingAccountData = data.newAccountData()
+		const isReadOnly = existingAccountData != null
 		const signupFormAttrs: SignupFormAttrs = {
-			submitHandler: newAccountData => {
+			newSignupHandler: newAccountData => {
+				// TODO cleanup?
 				console.log("new account data: ", newAccountData)
-				if (newAccountData) {
-					data.newAccountData(newAccountData)
-				}
-				if (data.newAccountData()) {
-					emitWizardEvent(this._domElement, WizardEventType.SHOWNEXTPAGE)
+				if (newAccountData || existingAccountData) {
+					if (!existingAccountData) {
+						data.newAccountData(newAccountData)
+					}
+					const {mailAddress, password} = neverNull(newAccountData || existingAccountData)
+					data.password(password)
+					data.mailAddress(mailAddress)
+					logins.createSession(mailAddress, password, client.getIdentifier(), false, false).then(credentials => {
+						data.credentials(credentials)
+						console.log("logged in", credentials)
+						emitWizardEvent(this._domElement, WizardEventType.SHOWNEXTPAGE)
+					})
 				}
 			},
-			readonly: data.newAccountData() != null,
-			prefilledMailAddress: data.newAccountData() && neverNull(data.newAccountData()).mailAddress || undefined,
+			readonly: isReadOnly,
+			prefilledMailAddress: existingAccountData ? existingAccountData.mailAddress : "",
 			isBusinessUse: () => false,
 			isPaidSubscription: () => false,
 			campaign: () => null
@@ -160,8 +182,19 @@ class RedeemGiftCardPage implements WizardPageN<GiftCardRedeemData> {
 		const confirmButtonAttrs = {
 			label: () => "Redeem gift card", // Translate
 			click: () => {
-				redeemGiftCard(data.giftCard, logins.getUserController().user)
-			}
+				redeemGiftCard(data.giftCard, logins.getUserController().user).then(
+					redeemGiftCardSuccess => {
+						if (redeemGiftCardSuccess) {
+							Dialog.info(() => "Congratulations!", () => "You now have a premium account", "ok_action", DialogType.EditMedium).then(() => {
+								emitWizardEvent(vnode.dom, WizardEventType.CLOSEDIALOG)
+							}) // Translate
+						} else {
+							Dialog.error(() => "Could not redeem gift card") // Translate // TODO handle gift card errors
+						}
+					}
+				)
+			},
+			type: ButtonType.Login
 		}
 
 		return m(ButtonN, confirmButtonAttrs)
@@ -177,7 +210,8 @@ export function loadUseGiftCardWizard(giftCard: GiftCard): Promise<Dialog> {
 			mailAddress: stream(""),
 			password: stream(""),
 			credentialsMethod: "signup",
-			giftCard: giftCard
+			giftCard: giftCard,
+			credentials: stream(null),
 		}
 
 

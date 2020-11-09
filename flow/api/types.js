@@ -142,6 +142,8 @@ type WorkerRequestType = 'setup'
 	| 'checkMailForPhishing'
 	| 'getEventByUid'
 	| 'generateGiftCard'
+	| 'redeemGiftCard'
+
 
 type MainRequestType = 'execNative'
 	| 'entityEvent'

@@ -35,7 +35,8 @@ import {uint8ArrayToBase64} from "../common/utils/Encoding"
 import {CheckboxN} from "../../gui/base/CheckboxN"
 
 export type SignupFormAttrs = {
-	submitHandler: ?NewAccountData => void,
+	/** Handle a new account signup. if readonly then the argument will always be null */
+	newSignupHandler: ?NewAccountData => void,
 	isBusinessUse: lazy<boolean>,
 	isPaidSubscription: lazy<boolean>,
 	campaign: lazy<?string>,
@@ -75,7 +76,7 @@ export class SignupForm implements MComponent<SignupFormAttrs> {
 
 		const submit = () => {
 			if (a.readonly) {
-				return a.submitHandler(null)
+				return a.newSignupHandler(null)
 			}
 			const errorMessage = this._mailAddressForm.getErrorMessageId() || this._passwordForm.getErrorMessageId()
 				|| (!this._confirmTerms() ? "termsAcceptedNeutral_msg" : null)
@@ -91,21 +92,15 @@ export class SignupForm implements MComponent<SignupFormAttrs> {
 
 			ageConfirmPromise.then(confirmed => {
 				if (confirmed) {
-					// TODO uncomment this when no longer developing
-					// return signup(
-					// 	this._mailAddressForm.getCleanMailAddress(),
-					// 	this._passwordForm.getNewPassword(),
-					// 	this._code(),
-					// 	a.isBusinessUse(),
-					// 	a.isPaidSubscription(),
-					// 	a.campaign()
-					// ).then(newAccountData => {
-					// 	 a.submitHandler(newAccountData)
-					//  })
-					return a.submitHandler({
-						mailAddress: "dummy@tutanota.de",
-						recoverCode: "a15",
-						password: "1234"
+					return signup(
+						this._mailAddressForm.getCleanMailAddress(),
+						this._passwordForm.getNewPassword(),
+						this._code(),
+						a.isBusinessUse(),
+						a.isPaidSubscription(),
+						a.campaign()
+					).then(newAccountData => {
+						a.newSignupHandler(newAccountData)
 					})
 				}
 			})

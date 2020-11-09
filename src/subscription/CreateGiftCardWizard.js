@@ -81,16 +81,7 @@ export function showPurchaseGiftCardWizard(): Promise<?GiftCard> {
 					},
 					componentClass: GiftCardConfirmationPage
 				},
-				// {
-				// 	attrs: {
-				// 		data: data,
-				// 		headerTitle: () => "Your gift card", // Translate
-				// 		nextAction: (_) => Promise.resolve(true),
-				// 		isSkipAvailable: () => false,
-				// 		isEnabled: () => true,
-				// 	},
-				// 	componentClass: GiftCardPresentationPage
-				// }
+
 			]
 
 			const wizardBuilder = createWizardDialog(data, wizardPages, () => {
@@ -100,31 +91,5 @@ export function showPurchaseGiftCardWizard(): Promise<?GiftCard> {
 			wizardBuilder.dialog.show()
 			return wizardBuilder.promise.then(() => data.giftCard)
 		})
-	})
-}
-
-// TODO
-class GiftCardPresentation implements MComponent<GiftCard> {
-	view(vnode: Vnode<GiftCard>): Children {
-		const giftCard = vnode.attrs
-		return m(".present-giftcard-page.pt", [
-			m("span", {
-				style: {
-					// fontSize: "0.5rem"
-				}
-			}, JSON.stringify(giftCard, null, 4))
-		])
-	}
-}
-
-export function showGiftCardPresentationDialog(giftCard: GiftCard): void {
-	let dialog
-	dialog = Dialog.showActionDialog({
-		title: () => "A gift card that you did make", // Translate
-		child: () => m(GiftCardPresentation, giftCard),
-		okAction: null,
-		allowCancel: false,
-		okAction: () => { dialog.close() },
-		type: DialogType.EditLarger
 	})
 }

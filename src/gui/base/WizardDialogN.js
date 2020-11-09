@@ -53,6 +53,7 @@ export function emitWizardEvent(dom: ?HTMLElement, eventType: WizardEventTypeEnu
 	if (dom) {
 		const event = new Event(eventType, {bubbles: true, cancelable: true})
 		dom.dispatchEvent(event)
+		m.redraw()
 	}
 }
 
@@ -159,7 +160,6 @@ class WizardDialogAttrs<T> {
 		}
 	}
 
-
 	_getEnabledPages(): WizardPageWrapper<T>[] {
 		return this.pages.filter(p => p.attrs.isEnabled())
 	}
@@ -168,7 +168,6 @@ class WizardDialogAttrs<T> {
 		const pages = this._getEnabledPages()
 		this.currentPage = pages[targetIndex]
 	}
-
 
 	goToNextPageOrCloseWizard() {
 		const pages = this._getEnabledPages()
@@ -181,8 +180,6 @@ class WizardDialogAttrs<T> {
 			this.currentPage = currentIndex < lastIndex ? pages[currentIndex + 1] : pages[lastIndex]
 		}
 	}
-
-
 }
 
 
